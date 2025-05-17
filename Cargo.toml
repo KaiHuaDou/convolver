@@ -1,0 +1,9 @@
+[package]
+name = "lifegame"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+png = { version = "0.17.16", registry = "ustc" }
+rand = { version = "0.9.1", registry = "ustc" }
+rayon = { version = "1.10.0", registry = "ustc" }
