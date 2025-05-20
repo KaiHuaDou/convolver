@@ -4,5 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+clap = { version = "4.5.38", registry = "ustc", features = ["derive"] }
+lazy_static = { version = "1.5.0", registry = "ustc" }
 png = { version = "0.17.16", registry = "ustc" }
 rayon = { version = "1.10.0", registry = "ustc" }

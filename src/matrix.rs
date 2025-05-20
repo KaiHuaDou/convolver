@@ -10,11 +10,8 @@ pub struct Matrix {
 }
 
 impl Matrix {
-    pub fn new(rows: usize, cols: usize, data: Vec<[u8; 4]>) -> Result<Self, String> {
-        if data.len() != rows * cols {
-            return Err(format!("数据长度 {} ≠ {} * {}", data.len(), rows, cols));
-        }
-        Ok(Self { rows, cols, data })
+    pub fn new(rows: usize, cols: usize) -> Self {
+        Self { rows: rows, cols: cols, data: vec![[0u8; 4]; rows * cols] }
     }
 
     pub fn get(&self, row: isize, col: isize) -> Option<[u8; 4]> {

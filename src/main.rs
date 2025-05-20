@@ -1,21 +1,23 @@
 #![allow(dead_code)]
 
 mod convolve;
+mod function;
 mod matrix;
+mod sum;
 
 use crate::convolve::*;
-use crate::matrix::*;
-use std::env;
+use crate::sum::*;
+use std::env::args_os;
 
 fn main() {
-    let iteration = env::args().nth(1).unwrap().parse().unwrap();
-    let mut matrix = Matrix::read_from_png("initial.png").unwrap();
-    for _ in 0..iteration {
-        matrix.convolve(canny);
-        print!("*");
-    }
-    match matrix.write_to_png("result.png") {
-        Ok(()) => {}
-        Err(e) => eprintln!("发生错误：{}", e),
+    match args_os().nth(1) {
+        Some(x) => {
+            if x == "s" {
+                sum_mode();
+            } else {
+                convolve_mode();
+            }
+        }
+        None => convolve_mode(),
     }
 }
