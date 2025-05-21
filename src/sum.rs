@@ -50,7 +50,7 @@ pub fn sum_mode() {
 impl Matrix {
     pub fn add(a: Matrix, b: Matrix) -> Result<Matrix, String> {
         if a.rows != b.rows || a.rows != b.rows {
-            return Err("The size of two matrix should be same".to_string());
+            return Err("The size of two matrix should be same".into());
         }
         let mut result = Matrix::new(a.rows, a.cols);
         result.data.par_iter_mut().enumerate().for_each(|(index, value)| {

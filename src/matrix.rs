@@ -61,16 +61,13 @@ impl Matrix {
         Ok(Matrix { rows: height, cols: width, data })
     }
 
-    pub fn write_to_png(&self, filename: &str) -> io::Result<()> {
+    pub fn write_to_png(self, filename: &str) -> io::Result<()> {
         let file = fs::File::create(filename)?;
         let ref mut buffer = io::BufWriter::new(file);
         let mut encoder = png::Encoder::new(buffer, self.cols as u32, self.rows as u32);
         encoder.set_color(png::ColorType::Rgba);
         let mut writer = encoder.write_header()?;
-        let mut result: Vec<u8> = vec![];
-        for i in &self.data {
-            result.append(&mut i.to_vec());
-        }
+        let result: Vec<u8> = self.data.into_iter().flatten().collect();
         writer.write_image_data(&result).unwrap();
         Ok(())
     }

@@ -3,3 +3,5 @@
 *.png
 *.bin
 *.txt
+
+flamegraph.svg

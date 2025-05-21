@@ -4,6 +4,7 @@ use clap::Parser;
 use rayon::prelude::*;
 use std::process::exit;
 use std::str::FromStr;
+use std::time::Instant;
 
 #[derive(Parser)]
 #[command(version)]
@@ -41,10 +42,14 @@ pub fn convolve_mode() {
         }
     };
 
+    let start = Instant::now();
     for _ in 0..cli.iteration {
         matrix.convolve(&function);
         print!("{}", cli.indicator);
     }
+    let duration = start.elapsed();
+    println!("Time elapsed: {:?}", duration);
+
     match matrix.write_to_png(&cli.output) {
         Ok(()) => {}
         Err(e) => eprintln!("Write PNG occurs error: {}", e),
@@ -74,7 +79,9 @@ impl Matrix {
                     let ccol = (col + dcol).clamp(0, self.cols as isize - 1);
                     let nindex = center as isize + dcol + drow * size as isize;
                     let index = crow * self.cols as isize + ccol;
-                    neighbors[nindex as usize] = self.data[index as usize];
+                    unsafe {
+                        neighbors[nindex as usize] = *self.data.get_unchecked(index as usize)
+                    };
                 }
             }
 
