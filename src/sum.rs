@@ -20,31 +20,19 @@ struct SumCli {
 pub fn sum_mode() {
     let cli = SumCli::parse();
 
-    let a = match Matrix::read_from_png(&cli.input1) {
-        Ok(matrix) => matrix,
-        Err(e) => {
-            eprintln!("Read PNG 1 occurs error: {}", e);
-            exit(1);
-        }
-    };
-    let b = match Matrix::read_from_png(&cli.input2) {
-        Ok(matrix) => matrix,
-        Err(e) => {
-            eprintln!("Read PNG 2 occurs error: {}", e);
-            exit(1);
-        }
-    };
-    let matrix = match Matrix::add(a, b) {
-        Ok(matrix) => matrix,
-        Err(e) => {
-            eprintln!("Add matrix occurs error: {}", e);
-            exit(1);
-        }
-    };
-    match matrix.write_to_png(&cli.output) {
-        Ok(()) => {}
-        Err(e) => eprintln!("Write PNG occurs error: {}", e),
-    }
+    let a = Matrix::read_from_png(&cli.input1).unwrap_or_else(|e| {
+        eprintln!("Read PNG 1 occurs error: {}", e);
+        exit(1);
+    });
+    let b = Matrix::read_from_png(&cli.input2).unwrap_or_else(|e| {
+        eprintln!("Read PNG 2 occurs error: {}", e);
+        exit(1);
+    });
+    let matrix = Matrix::add(a, b).unwrap_or_else(|e| {
+        eprintln!("Add matrix occurs error: {}", e);
+        exit(1);
+    });
+    matrix.write_to_png(&cli.output).unwrap_or_else(|e| eprintln!("Write PNG occurs error: {}", e));
 }
 
 impl Matrix {

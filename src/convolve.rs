@@ -18,7 +18,7 @@ struct ConvolveCli {
     output: String,
     #[arg(short = 't', long, default_value_t = 1)]
     iteration: usize,
-    #[arg(short, long ,default_value_t = String::from("none"))]
+    #[arg(short, long ,default_value_t = String::from("3-none"))]
     function: String,
     #[arg(long, default_value_t = '*')]
     indicator: char,
@@ -26,21 +26,15 @@ struct ConvolveCli {
 
 pub fn convolve_mode() {
     let cli = ConvolveCli::parse();
-    let mut matrix = match Matrix::read_from_png(&cli.input) {
-        Ok(matrix) => matrix,
-        Err(e) => {
-            eprintln!("Read PNG occurs error: {}", e);
-            exit(1);
-        }
-    };
+    let mut matrix = Matrix::read_from_png(&cli.input).unwrap_or_else(|e| {
+        eprintln!("Read PNG occurs error: {}", e);
+        exit(1);
+    });
 
-    let function = match Function::from_str(&cli.function) {
-        Ok(kernel) => kernel,
-        Err(e) => {
-            eprintln!("Invalid function: {}", e);
-            exit(1);
-        }
-    };
+    let function = Function::from_str(&cli.function).unwrap_or_else(|e| {
+        eprintln!("Invalid function: {}", e);
+        exit(1);
+    });
 
     let start = Instant::now();
     for _ in 0..cli.iteration {
@@ -50,10 +44,10 @@ pub fn convolve_mode() {
     let duration = start.elapsed();
     println!("Time elapsed: {:?}", duration);
 
-    match matrix.write_to_png(&cli.output) {
-        Ok(()) => {}
-        Err(e) => eprintln!("Write PNG occurs error: {}", e),
-    }
+    matrix.write_to_png(&cli.output).unwrap_or_else(|e| {
+        eprintln!("Write PNG occurs error: {}", e);
+        exit(1);
+    });
 }
 
 impl Matrix {
