@@ -1,5 +1,10 @@
 from PIL import Image
 
-image = Image.open('initial.png')
-rgba_image = image.convert('RGBA')
-rgba_image.save('initial.png', progressive=False)
+image = 0
+try:
+    image = Image.open('initial.png')
+except:
+    image = Image.open('initial.jpg')
+
+result = image.convert('RGBA')
+result.save('initial.png', progressive=False)

@@ -3,6 +3,7 @@
 mod convolve;
 mod function;
 mod matrix;
+mod neighbors;
 mod sum;
 
 use crate::convolve::*;

@@ -4,7 +4,7 @@ cargo r --release -- c initial.png result-gauss-sharpen.png -f 5-gauss-sharpen-1
 cargo r --release -- c initial.png result-laplacian_4.png -f 3-laplacian_4
 cargo r --release -- c initial.png result-laplacian_8.png -f 3-laplacian_8
 cargo r --release -- c initial.png result-laplacian_8r.png -f 3-laplacian_8r
-cargo r --release -- c initial.png result-laplacian_m.png -f 5-laplacian_m
+cargo r --release -- c initial.png result-laplacian_og.png -f 5-laplacian_og
 cargo r --release -- c initial.png result-motion.png -f 31-motion-31-135
 cargo r --release -- c initial.png result-prewitt-h.png -f 3-prewitt_h
 cargo r --release -- c initial.png result-prewitt-v.png -f 3-prewitt_v

@@ -1,5 +1,6 @@
 use crate::function::*;
 use crate::matrix::*;
+use crate::neighbors::*;
 use clap::Parser;
 use rayon::prelude::*;
 use std::process::exit;
@@ -42,7 +43,7 @@ pub fn convolve_mode() {
         print!("{}", cli.indicator);
     }
     let duration = start.elapsed();
-    println!("Time elapsed: {:?}", duration);
+    println!("\nTime elapsed: {:?}", duration);
 
     matrix.write_to_png(&cli.output).unwrap_or_else(|e| {
         eprintln!("Write PNG occurs error: {}", e);
@@ -53,11 +54,7 @@ pub fn convolve_mode() {
 impl Matrix {
     pub fn convolve(&mut self, kernel: &Function) {
         let mut result = vec![[0u8, 0u8, 0u8, 0u8]; self.rows * self.cols];
-        let size = match kernel {
-            Function::Constant(x, _) => *x,
-            Function::Single(x, _, _) => *x,
-            Function::Multiple(x, _, _) => *x,
-        };
+        let size = kernel.size();
         let iter: isize = (size as isize - 1) / 2;
         let area: usize = size * size;
         let center: usize = (area - 1) / 2;
@@ -72,10 +69,7 @@ impl Matrix {
                     let crow = (row + drow).clamp(0, self.rows as isize - 1);
                     let ccol = (col + dcol).clamp(0, self.cols as isize - 1);
                     let nindex = center as isize + dcol + drow * size as isize;
-                    let index = crow * self.cols as isize + ccol;
-                    unsafe {
-                        neighbors[nindex as usize] = *self.data.get_unchecked(index as usize)
-                    };
+                    neighbors[nindex as usize] = self.get(crow, ccol);
                 }
             }
 

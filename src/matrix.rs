@@ -2,7 +2,6 @@ use png;
 use std::fs;
 use std::io;
 
-#[derive(Clone)]
 pub struct Matrix {
     pub rows: usize,
     pub cols: usize,
@@ -14,19 +13,18 @@ impl Matrix {
         Self { rows: rows, cols: cols, data: vec![[0u8; 4]; rows * cols] }
     }
 
-    pub fn get(&self, row: isize, col: isize) -> Option<[u8; 4]> {
-        let index = row * self.cols as isize + col;
-        if row < 0 || row >= self.rows as isize || col < 0 || col >= self.cols as isize {
-            None
-        } else {
-            Some(self.data[index as usize])
+    #[inline]
+    pub fn get(&self, row: isize, col: isize) -> [u8; 4] {
+        unsafe {
+            let index = row * self.cols as isize + col;
+            *self.data.get_unchecked(index as usize)
         }
     }
 
-    pub fn set(&mut self, row: usize, col: usize, value: [u8; 4]) -> Result<(), String> {
+    #[inline]
+    pub fn set(&mut self, row: usize, col: usize, value: [u8; 4]) {
         let index = row * self.cols + col;
         self.data[index] = value;
-        Ok(())
     }
 
     pub fn read_from_png(filename: &str) -> io::Result<Self> {

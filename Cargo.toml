@@ -12,6 +12,7 @@ rayon = "1.10.0"
 [profile.release]
 lto = true
 panic = "abort"
+incremental = true
 
 [profile.analyze]
 inherits = "release"
