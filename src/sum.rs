@@ -15,6 +15,8 @@ struct SumCli {
     input2: String,
     #[arg()]
     output: String,
+    #[arg(short, long, default_value_t = false)]
+    migrate: bool,
 }
 
 pub fn sum_mode() {
@@ -28,7 +30,7 @@ pub fn sum_mode() {
         eprintln!("Read PNG 2 occurs error: {}", e);
         exit(1);
     });
-    let matrix = Matrix::add(a, b).unwrap_or_else(|e| {
+    let matrix = Matrix::add(a, b, cli.migrate).unwrap_or_else(|e| {
         eprintln!("Add matrix occurs error: {}", e);
         exit(1);
     });
@@ -36,8 +38,8 @@ pub fn sum_mode() {
 }
 
 impl Matrix {
-    pub fn add(a: Matrix, b: Matrix) -> Result<Matrix, String> {
-        if a.rows != b.rows || a.rows != b.rows {
+    pub fn add(a: Matrix, b: Matrix, migrate: bool) -> Result<Matrix, String> {
+        if a.rows != b.rows || a.cols != b.cols {
             return Err("The size of two matrix should be same".into());
         }
         let mut result = Matrix::new(a.rows, a.cols);
@@ -46,7 +48,7 @@ impl Matrix {
             for i in 0..4 {
                 let x = a.data[index][i] as f32;
                 let y = b.data[index][i] as f32;
-                r[i] = ((x + y) / 2.0) as u8;
+                r[i] = ((x + y) / if migrate { 2.0 } else { 1.0 }).clamp(0.0, 255.0) as u8;
             }
             *value = r;
         });

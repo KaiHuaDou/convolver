@@ -20,31 +20,43 @@ cargo run --release
 ### 图像卷积
 
 ```sh
-convolver c <输入图片> <输出图片> -f <卷积方法> -t <迭代次数> -i <进度指示器>
+convolver c \
+    <输入图片[input.png]> \
+    <输出图片[output.png]> \
+    -f <卷积方法[3-none]> \
+    -t <迭代次数[1]> \
+    -i <进度指示器[*]>
 ```
 
 ### 支持的卷积方法
 
 > [!NOTE]
 > 以下 `*: usize` 均指卷积核大小
+> 以下 `σ: f32` 均指高斯方法中的`σ`
 > 以下 `d: String` 均指方向，可选 `n`,`ne`,`e`,`se`,`s`,`sw`,`w`,`nw`。
 
 - `*-blur`：均值模糊
-- `*-dog-σ1-σ2`：高斯差分 (DoG)，`σ1: f32`, `σ2: f32` 均为标准差
+- `*-dog-σ1-σ2-p`：高斯差分 (DoG), `p: f32`为补偿系数，取 0 时按照`16 - (σ1 - σ2)`计算
 - `*-emboss-d`：浮雕效果
-- `*-gauss-blur-σ`：高斯模糊，`σ: f32` 为标准差
-- `*-gauss-sharpen-σ`：高斯锐化，`σ: f32` 为标准差
+- `*-gauss-blur-σ`：高斯模糊
+- `*-gauss-sharpen-σ`：高斯锐化
+- `*-max_hsla`：HSLA 模式，逐通道取最大值
+- `*-max`：逐通道取最大值
+- `*-median_hsla`：HSLA 模式，逐通道取中值
+- `*-median`：逐通道取中值
+- `*-min_hsla`：HSLA 模式，逐通道取最小值
+- `*-min`：逐通道取最小值
 - `*-motion-l-θ`：运动模糊，`l: f32` 为长度，`θ: f32` 为角度
 - `*-none`：无操作
-- `3-edge`：边缘增强
-- `3-kirsch-d`：Kirsch 边缘检测
+- `3-kirsch_d`：Kirsch 边缘检测
 - `3-laplacian_4` / `3-laplacian_8` / `3-laplacian_8r`：拉普拉斯算子
 - `3-prewitt_h` / `3-prewitt_v`：Prewitt 边缘检测
-- `3-robinson-d`：Robinson 边缘检测
+- `3-robinson_d`：Robinson 边缘检测
 - `3-scharr_h` / `3-scharr_v`：Scharr 边缘检测
 - `3-sharpen` / `3-sharpen+`：一般锐化效果
 - `3-sobel_h` / `3-sobel_v`：Sobel 边缘检测
 - `3-unsharp_masking`：Unsharp masking 效果
+- `5-inner`：一种奇特的内部模糊方案
 - `5-laplacian_og`：高斯拉普拉斯
 
 ### 图像合并

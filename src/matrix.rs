@@ -29,7 +29,8 @@ impl Matrix {
 
     pub fn read_from_png(filename: &str) -> io::Result<Self> {
         let file = fs::File::open(filename)?;
-        let decoder = png::Decoder::new(file);
+        let mut decoder = png::Decoder::new(file);
+        decoder.set_transformations(png::Transformations::EXPAND | png::Transformations::STRIP_16);
         let mut reader = decoder.read_info().map_err(|e| {
             io::Error::new(io::ErrorKind::Other, format!("Failed to read PNG info: {}", e))
         })?;
@@ -59,14 +60,16 @@ impl Matrix {
         Ok(Matrix { rows: height, cols: width, data })
     }
 
-    pub fn write_to_png(self, filename: &str) -> io::Result<()> {
+    pub fn write_to_png(&self, filename: &str) -> io::Result<()> {
         let file = fs::File::create(filename)?;
         let ref mut buffer = io::BufWriter::new(file);
         let mut encoder = png::Encoder::new(buffer, self.cols as u32, self.rows as u32);
         encoder.set_color(png::ColorType::Rgba);
         let mut writer = encoder.write_header()?;
-        let result: Vec<u8> = self.data.into_iter().flatten().collect();
-        writer.write_image_data(&result).unwrap();
+        let result: &[u8] = unsafe {
+            std::slice::from_raw_parts(self.data.as_ptr() as *const u8, self.data.len() * 4)
+        };
+        writer.write_image_data(result)?;
         Ok(())
     }
 }

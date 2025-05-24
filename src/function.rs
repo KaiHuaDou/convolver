@@ -18,33 +18,34 @@ pub enum Function {
 lazy_static! {
     pub static ref STATIC_KERNELS: HashMap<&'static str, Vec<f32>> = {
         let mut x = HashMap::with_capacity(14);
-        x.insert("edge", vec![0.0, -1.0, 0.0, -1.0, 5.0, -1.0, 0.0, -1.0, 0.0]);
         x.insert("emboss", vec![-1.0, -1.0, 0.0, -1.0, 0.0, 1.0, 0.0, 1.0, 1.0]);
+        x.insert("kirsch_e", vec![-3.0, -3.0, 5.0, -3.0, 0.0, 5.0, -3.0, -3.0, 5.0]);
         x.insert("kirsch_n", vec![5.0, 5.0, 5.0, -3.0, 0.0, -3.0, -3.0, -3.0, -3.0]);
+        x.insert("kirsch_ne", vec![-3.0, 5.0, 5.0, -3.0, 0.0, 5.0, -3.0, -3.0, -3.0]);
         x.insert("kirsch_nw", vec![5.0, 5.0, -3.0, 5.0, 0.0, -3.0, -3.0, -3.0, -3.0]);
-        x.insert("kirsch_w", vec![5.0, -3.0, -3.0, 5.0, 0.0, -3.0, 5.0, -3.0, -3.0]);
-        x.insert("kirsch_sw", vec![-3.0, -3.0, -3.0, 5.0, 0.0, -3.0, 5.0, 5.0, -3.0]);
         x.insert("kirsch_s", vec![-3.0, -3.0, -3.0, -3.0, 0.0, -3.0, 5.0, 5.0, 5.0]);
         x.insert("kirsch_se", vec![-3.0, -3.0, -3.0, -3.0, 0.0, 5.0, -3.0, 5.0, 5.0]);
-        x.insert("kirsch_e", vec![-3.0, -3.0, 5.0, -3.0, 0.0, 5.0, -3.0, -3.0, 5.0]);
-        x.insert("kirsch_ne", vec![-3.0, 5.0, 5.0, -3.0, 0.0, 5.0, -3.0, -3.0, -3.0]);
-        x.insert("robinson_n", vec![-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0]);
-        x.insert("robinson_ne", vec![0.0, -1.0, -2.0, 1.0, 0.0, -1.0, 2.0, 1.0, 0.0]);
-        x.insert("robinson_e", vec![1.0, 0.0, -1.0, 2.0, 0.0, -2.0, 1.0, 0.0, -1.0]);
-        x.insert("robinson_se", vec![2.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, -1.0, -2.0]);
-        x.insert("robinson_s", vec![1.0, 2.0, 1.0, 0.0, 0.0, 0.0, -1.0, -2.0, -1.0]);
-        x.insert("robinson_sw", vec![0.0, 1.0, 2.0, -1.0, 0.0, 1.0, -2.0, -1.0, 0.0]);
-        x.insert("robinson_w", vec![-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0]);
-        x.insert("robinson_nw", vec![-2.0, -1.0, 0.0, -1.0, 0.0, 1.0, 0.0, 1.0, 2.0]);
+        x.insert("kirsch_sw", vec![-3.0, -3.0, -3.0, 5.0, 0.0, -3.0, 5.0, 5.0, -3.0]);
+        x.insert("kirsch_w", vec![5.0, -3.0, -3.0, 5.0, 0.0, -3.0, 5.0, -3.0, -3.0]);
         x.insert("laplacian_4", vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0]);
         x.insert("laplacian_8", vec![1.0, 1.0, 1.0, 1.0, -8.0, 1.0, 1.0, 1.0, 1.0]);
         x.insert("laplacian_8r", vec![-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0]);
         x.insert("prewitt_h", vec![-1.0, 0.0, 1.0, -1.0, 0.0, 1.0, -1.0, 0.0, 1.0]);
         x.insert("prewitt_v", vec![-1.0, -1.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0]);
+        x.insert("robinson_e", vec![1.0, 0.0, -1.0, 2.0, 0.0, -2.0, 1.0, 0.0, -1.0]);
+        x.insert("robinson_n", vec![-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0]);
+        x.insert("robinson_ne", vec![0.0, -1.0, -2.0, 1.0, 0.0, -1.0, 2.0, 1.0, 0.0]);
+        x.insert("robinson_nw", vec![-2.0, -1.0, 0.0, -1.0, 0.0, 1.0, 0.0, 1.0, 2.0]);
+        x.insert("robinson_s", vec![1.0, 2.0, 1.0, 0.0, 0.0, 0.0, -1.0, -2.0, -1.0]);
+        x.insert("robinson_se", vec![2.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, -1.0, -2.0]);
+        x.insert("robinson_sw", vec![0.0, 1.0, 2.0, -1.0, 0.0, 1.0, -2.0, -1.0, 0.0]);
+        x.insert("robinson_w", vec![-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0]);
         x.insert("scharr_h", vec![-3.0, 0.0, 3.0, -10.0, 0.0, 10.0, -3.0, 0.0, 3.0]);
         x.insert("scharr_v", vec![-3.0, -10.0, -3.0, 0.0, 0.0, 0.0, 3.0, 10.0, 3.0]);
         x.insert("sharpen", vec![0.0, -1.0, 0.0, -1.0, 5.0, -1.0, 0.0, -1.0, 0.0]);
         x.insert("sharpen+", vec![-1.0, -1.0, -1.0, -1.0, 9.0, -1.0, -1.0, -1.0, -1.0]);
+        x.insert("sobel_h", vec![-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0]);
+        x.insert("sobel_v", vec![-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0]);
         x.insert(
             "unsharp_masking",
             vec![-1.0, -2.0, -1.0, -2.0, 28.0, -2.0, -1.0, -2.0, -1.0]
@@ -79,6 +80,13 @@ impl FromStr for Function {
         match parts[1] {
             "none" => Ok(Function::Constant(size, Arc::new(|n| n.none()))),
             "blur" => Ok(Function::Constant(size, Arc::new(|n| n.blur()))),
+            "min" => Ok(Function::Constant(size, Arc::new(|n| n.position(Pos::Min)))),
+            "min_hsla" => Ok(Function::Constant(size, Arc::new(|n| n.position_hsla(Pos::Min)))),
+            "median" => Ok(Function::Constant(size, Arc::new(|n| n.position(Pos::Mid)))),
+            "median_hsla" => Ok(Function::Constant(size, Arc::new(|n| n.position_hsla(Pos::Mid)))),
+            "max" => Ok(Function::Constant(size, Arc::new(|n| n.position(Pos::Max)))),
+            "max_hsla" => Ok(Function::Constant(size, Arc::new(|n| n.position_hsla(Pos::Max)))),
+            "inner" => Ok(Function::Constant(size, Arc::new(|n| n.inner()))),
             "motion" => {
                 if parts.len() < 4 {
                     return Err("Invalid motion function format".into());
@@ -102,12 +110,13 @@ impl FromStr for Function {
                 }
             }
             "dog" => {
-                if parts.len() < 4 {
+                if parts.len() < 5 {
                     return Err("Invalid DoG function format".into());
                 }
                 let sigma1 = parts[2].parse::<f32>().unwrap_or(1.0);
                 let sigma2 = parts[3].parse::<f32>().unwrap_or(1.0);
-                Function::generate_dog_kernel(size, sigma1, sigma2)
+                let p = parts[4].parse::<f32>().unwrap_or(1.0);
+                Function::generate_dog_kernel(size, sigma1, sigma2, p)
                     .map_err(|e| format!("Failed to creat DoG function: {}", e))
             }
             "emboss" => {
@@ -194,10 +203,20 @@ impl Function {
         Ok(Self::Multiple(size, Arc::new(|n, i| n.kernel(&i)), kernel))
     }
 
-    pub fn generate_dog_kernel(size: usize, sigma1: f32, sigma2: f32) -> Result<Self, String> {
+    pub fn generate_dog_kernel(
+        size: usize,
+        sigma1: f32,
+        sigma2: f32,
+        p: f32,
+    ) -> Result<Self, String> {
         let gauss1 = Self::gauss_blur_function(size, sigma1)?.vector().unwrap();
         let gauss2 = Self::gauss_blur_function(size, sigma2)?.vector().unwrap();
-        let kernel = gauss1.into_iter().zip(gauss2.into_iter()).map(|(a, b)| a - b).collect();
+        let mul = match p {
+            0.0 => 16.0 - (sigma1 - sigma2),
+            _ => p,
+        };
+        let kernel =
+            gauss1.into_iter().zip(gauss2.into_iter()).map(|(a, b)| (a - b) * mul).collect();
         Ok(Self::Multiple(size, Arc::new(|n, i| n.kernel(&i)), kernel))
     }
 
@@ -277,7 +296,7 @@ impl Function {
             "ne" => (1, -1),
             "sw" => (-1, 1),
             "se" => (1, 1),
-            _ => panic!("Invalid direction string"),
+            _ => return Err("Invalid direction string".into()),
         };
 
         let sum_abs = dx.abs() + dy.abs();

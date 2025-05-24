@@ -1,9 +1,33 @@
+use palette::{Hsla, IntoColor, Srgba};
+
+pub enum Pos {
+    Max,
+    Mid,
+    Min,
+}
+
 pub struct Neighbors {
     pub size: usize,
     pub data: Vec<[u8; 4]>,
 }
 
 impl Neighbors {
+    pub fn to_hsla(&self) -> Vec<[f32; 4]> {
+        self.data
+            .iter()
+            .map(|rgba| {
+                let hsla: palette::Hsla = Srgba::new(
+                    rgba[0] as f32 / 255.0,
+                    rgba[1] as f32 / 255.0,
+                    rgba[2] as f32 / 255.0,
+                    rgba[3] as f32 / 255.0,
+                )
+                .into_color();
+                [hsla.hue.into_degrees(), hsla.saturation, hsla.lightness, hsla.alpha]
+            })
+            .collect()
+    }
+
     #[inline]
     pub fn none(&self) -> [u8; 4] {
         self.data[self.size * self.size / 2]
@@ -30,10 +54,21 @@ impl Neighbors {
     }
 
     #[inline]
-    pub fn median(&self) -> [u8; 4] {
-        let mut values = self.data.clone();
-        values.sort_unstable();
-        values[values.len() / 2]
+    pub fn position(&self, location: Pos) -> [u8; 4] {
+        positional_value::<u8>(&self.data, location)
+    }
+
+    #[inline]
+    pub fn position_hsla(&self, location: Pos) -> [u8; 4] {
+        let data = self.to_hsla();
+        let hsla = positional_value::<f32>(&data, location);
+        let result: palette::Srgba = Hsla::new(hsla[0], hsla[1], hsla[2], hsla[3]).into_color();
+        [
+            (result.red * 255.0) as u8,
+            (result.green * 255.0) as u8,
+            (result.blue * 255.0) as u8,
+            (result.alpha * 255.0) as u8,
+        ]
     }
 
     #[inline]
@@ -53,4 +88,28 @@ impl Neighbors {
             255,
         ]
     }
+
+    #[inline]
+    pub fn inner(&self) -> [u8; 4] {
+        [0u8, 0u8, 0u8, 0u8]
+    }
+}
+
+fn positional_value<T>(data: &Vec<[T; 4]>, location: Pos) -> [T; 4]
+where
+    T: Copy + PartialOrd + From<u8>,
+{
+    let mut result: [T; 4] = [T::from(0u8); 4];
+    result.iter_mut().enumerate().for_each(|(i, value)| {
+        let mut channels: Vec<T> = data.iter().map(|pixel| pixel[i]).collect();
+        channels.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+
+        let len = data.len();
+        *value = match location {
+            Pos::Min => channels[0],
+            Pos::Max => channels[len - 1],
+            Pos::Mid => channels[len / 2],
+        };
+    });
+    result
 }

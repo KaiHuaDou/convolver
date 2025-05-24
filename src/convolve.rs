@@ -13,9 +13,9 @@ use std::time::Instant;
 struct ConvolveCli {
     #[arg()]
     mode: Option<String>,
-    #[arg(default_value_t = String::from("initial.png"))]
+    #[arg(default_value_t = String::from("input.png"))]
     input: String,
-    #[arg(default_value_t = String::from("result.png"))]
+    #[arg(default_value_t = String::from("output.png"))]
     output: String,
     #[arg(short = 't', long, default_value_t = 1)]
     iteration: usize,
