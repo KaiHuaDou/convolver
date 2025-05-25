@@ -7,7 +7,7 @@ use std::process::exit;
 #[derive(Parser)]
 #[command(version)]
 #[command(about = "A general image sum tool", long_about = None)]
-struct SumCli {
+struct AddCli {
     #[arg()]
     mode: String,
     #[arg()]
@@ -20,8 +20,8 @@ struct SumCli {
     migrate: bool,
 }
 
-pub fn sum_mode() {
-    let cli = SumCli::parse();
+pub fn add_cli() {
+    let cli = AddCli::parse();
 
     let a = Matrix::<u8>::_read_png(&cli.input1).unwrap_or_else(|e| {
         eprintln!("Read PNG 1 occurs error: {}", e);

@@ -20,7 +20,7 @@ cargo run --release
 ### 图像卷积
 
 ```sh
-convolver c \
+convolver <MODE[rgba/hsla/luva]> \
     <输入图片[input.png]> \
     <输出图片[output.png]> \
     -f <卷积方法[3-none]> \
@@ -31,20 +31,18 @@ convolver c \
 ### 支持的卷积方法
 
 > [!NOTE]
-> 以下 `*: usize` 均指卷积核大小
-> 以下 `σ: f32` 均指高斯方法中的`σ`
-> 以下 `d: String` 均指方向，可选 `n`,`ne`,`e`,`se`,`s`,`sw`,`w`,`nw`。
+>
+> - 以下 `*: usize` 均指卷积核大小
+> - 以下 `σ: f32` 均指高斯方法中的`σ`
+> - 以下 `d: String` 均指方向，可选 `n`,`ne`,`e`,`se`,`s`,`sw`,`w`,`nw`。
 
 - `*-blur`：均值模糊
 - `*-dog-σ1-σ2-p`：高斯差分 (DoG), `p: f32`为补偿系数，取 0 时按照`16 - (σ1 - σ2)`计算
 - `*-emboss-d`：浮雕效果
 - `*-gauss-blur-σ`：高斯模糊
 - `*-gauss-sharpen-σ`：高斯锐化
-- `*-max_hsla`：HSLA 模式，逐通道取最大值
 - `*-max`：逐通道取最大值
-- `*-median_hsla`：HSLA 模式，逐通道取中值
 - `*-median`：逐通道取中值
-- `*-min_hsla`：HSLA 模式，逐通道取最小值
 - `*-min`：逐通道取最小值
 - `*-motion-l-θ`：运动模糊，`l: f32` 为长度，`θ: f32` 为角度
 - `*-none`：无操作
@@ -62,7 +60,7 @@ convolver c \
 ### 图像合并
 
 ```sh
-convolver s <图片1> <图片2> <输出图片>
+convolver add <图片1> <图片2> <输出图片>
 ```
 
 ## 许可证

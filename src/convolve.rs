@@ -26,7 +26,7 @@ struct ConvolveCli {
     indicator: char,
 }
 
-pub fn convolve_mode<T>()
+pub fn convolve_cli<T>()
 where
     T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + 'static,
 {
@@ -40,11 +40,6 @@ where
         eprintln!("Invalid function: {}", e);
         exit(1);
     });
-
-    match &function {
-        Function::Constant(size, _) => print!("{}", size),
-        Function::Param(size, _, param) => print!("{}, {:?}", size, param),
-    };
 
     let start = Instant::now();
     for _ in 0..cli.iteration {

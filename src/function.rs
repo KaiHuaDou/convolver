@@ -2,7 +2,6 @@ use crate::neighbors::*;
 use lazy_static::lazy_static;
 use num::*;
 use std::collections::HashMap;
-use std::fmt::format;
 use std::str::FromStr;
 use std::sync::Arc;
 

@@ -1,26 +1,22 @@
 #![allow(dead_code)]
 
+mod add;
 mod convolve;
 mod function;
+mod io;
 mod matrix;
 mod neighbors;
-mod sum;
 
+use crate::add::*;
 use crate::convolve::*;
-use crate::sum::*;
 use std::env::args_os;
 
 fn main() {
     match args_os().nth(1) {
-        Some(x) => {
-            if x == "sum" {
-                sum_mode();
-            } else if x == "rgba" {
-                convolve_mode::<u8>();
-            } else if x == "hsla" {
-                convolve_mode::<f32>();
-            }
-        }
-        None => convolve_mode::<u8>(),
+        Some(x) if x == "add" => add_cli(),
+        Some(x) if x == "rgba" => convolve_cli::<u8>(),
+        Some(x) if x == "hsla" => convolve_cli::<f32>(),
+        Some(x) if x == "luva" => convolve_cli::<i8>(),
+        _ => convolve_cli::<u8>(),
     }
 }
