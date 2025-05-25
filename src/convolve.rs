@@ -2,7 +2,7 @@ use crate::function::*;
 use crate::matrix::*;
 use crate::neighbors::*;
 use clap::Parser;
-use num::Num;
+use num::*;
 use rayon::prelude::*;
 use std::process::exit;
 use std::str::FromStr;
@@ -12,8 +12,8 @@ use std::time::Instant;
 #[command(version)]
 #[command(about = "A general image convolver", long_about = None)]
 struct ConvolveCli {
-    #[arg()]
-    mode: Option<String>,
+    #[arg(default_value_t = String::from("crgba"))]
+    mode: String,
     #[arg(default_value_t = String::from("input.png"))]
     input: String,
     #[arg(default_value_t = String::from("output.png"))]
@@ -26,9 +26,12 @@ struct ConvolveCli {
     indicator: char,
 }
 
-pub fn convolve_mode() {
+pub fn convolve_mode<T>()
+where
+    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + 'static,
+{
     let cli = ConvolveCli::parse();
-    let mut matrix: Matrix<u8> = Matrix::read_from_png(&cli.input).unwrap_or_else(|e| {
+    let mut matrix: Matrix<T> = Matrix::<T>::read_png(&cli.input).unwrap_or_else(|e| {
         eprintln!("Read PNG occurs error: {}", e);
         exit(1);
     });
@@ -38,6 +41,11 @@ pub fn convolve_mode() {
         exit(1);
     });
 
+    match &function {
+        Function::Constant(size, _) => print!("{}", size),
+        Function::Param(size, _, param) => print!("{}, {:?}", size, param),
+    };
+
     let start = Instant::now();
     for _ in 0..cli.iteration {
         matrix.convolve(&function);
@@ -46,7 +54,7 @@ pub fn convolve_mode() {
     let duration = start.elapsed();
     println!("\nTime elapsed: {:?}", duration);
 
-    matrix.write_to_png(&cli.output).unwrap_or_else(|e| {
+    matrix.write_png(&cli.output).unwrap_or_else(|e| {
         eprintln!("Write PNG occurs error: {}", e);
         exit(1);
     });
@@ -54,10 +62,10 @@ pub fn convolve_mode() {
 
 impl<T> Matrix<T>
 where
-    T: Num + Copy + Clone + Sync + Send + PartialOrd + From<u8>,
+    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + 'static,
 {
     pub fn convolve(&mut self, kernel: &Function<T>) {
-        let mut result = vec![[T::from(0u8); 4]; self.rows * self.cols];
+        let mut result = vec![[T::from(0u8).unwrap(); 4]; self.rows * self.cols];
         let size = kernel.size();
         let iter: isize = (size as isize - 1) / 2;
         let area: usize = size * size;
@@ -67,7 +75,7 @@ where
             let row = (index / self.cols) as isize;
             let col = (index % self.cols) as isize;
 
-            let mut neighbors = vec![[T::from(0u8); 4]; area];
+            let mut neighbors = vec![[T::from(0u8).unwrap(); 4]; area];
             for drow in -iter..=iter {
                 for dcol in -iter..=iter {
                     let crow = (row + drow).clamp(0, self.rows as isize - 1);

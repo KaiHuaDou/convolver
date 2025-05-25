@@ -1,7 +1,8 @@
 use crate::neighbors::*;
 use lazy_static::lazy_static;
-use num::Num;
+use num::*;
 use std::collections::HashMap;
+use std::fmt::format;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -12,11 +13,10 @@ type KernelMultipleClosure<T> = Arc<dyn Fn(Neighbors<T>, &Vec<f32>) -> [T; 4] + 
 #[derive(Clone)]
 pub enum Function<T>
 where
-    T: Num + Copy + Clone + Sync + Send + PartialOrd + From<u8>,
+    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd,
 {
     Constant(usize, KernelClosure<T>),
-    Single(usize, KernelSingleClosure<T>, f32),
-    Multiple(usize, KernelMultipleClosure<T>, Vec<f32>),
+    Param(usize, KernelMultipleClosure<T>, Vec<f32>),
 }
 
 lazy_static! {
@@ -68,7 +68,10 @@ lazy_static! {
     };
 }
 
-impl FromStr for Function<u8> {
+impl<T> FromStr for Function<T>
+where
+    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd,
+{
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -78,15 +81,15 @@ impl FromStr for Function<u8> {
         }
         let size =
             parts[0].parse::<usize>().map_err(|e| format!("Invalid function size: {}", e))?;
-        if size % 2 != 1 && size >= 3 {
-            return Err("Kernel size must be an odd number, received {}".into());
+        if size % 2 != 1 && size < 3 {
+            return Err(format!("Kernel size must be an odd number, received {}", size));
         }
         match parts[1] {
             "none" => Ok(Function::Constant(size, Arc::new(|n| n.none()))),
             "blur" => Ok(Function::Constant(size, Arc::new(|n| n.blur()))),
-            "min" => Ok(Function::Constant(size, Arc::new(|n| n.position(Pos::Min)))),
-            "median" => Ok(Function::Constant(size, Arc::new(|n| n.position(Pos::Mid)))),
-            "max" => Ok(Function::Constant(size, Arc::new(|n| n.position(Pos::Max)))),
+            "min" => Ok(Function::Constant(size, Arc::new(|n| n.positional(Pos::Min)))),
+            "median" => Ok(Function::Constant(size, Arc::new(|n| n.positional(Pos::Mid)))),
+            "max" => Ok(Function::Constant(size, Arc::new(|n| n.positional(Pos::Max)))),
             "inner" => Ok(Function::Constant(size, Arc::new(|n| n.inner()))),
             "motion" => {
                 if parts.len() < 4 {
@@ -133,7 +136,7 @@ impl FromStr for Function<u8> {
                 if kernel.len() != size * size {
                     return Err("Kernel size mismatch".into());
                 }
-                Ok(Function::Multiple(size, Arc::new(|n, i| n.kernel(&i)), kernel.to_vec()))
+                Ok(Function::Param(size, Arc::new(|n, i| n.kernel(&i)), kernel.to_vec()))
             }
         }
     }
@@ -141,14 +144,13 @@ impl FromStr for Function<u8> {
 
 impl<T> Function<T>
 where
-    T: Num + Copy + Clone + Sync + Send + PartialOrd + From<u8>,
+    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd,
 {
     #[inline]
     pub fn calculate(&self, input: Neighbors<T>) -> [T; 4] {
         match self {
             Self::Constant(_, f) => f(input),
-            Self::Single(_, f, x) => f(input, *x),
-            Self::Multiple(_, f, x) => f(input, x),
+            Self::Param(_, f, x) => f(input, x),
         }
     }
 
@@ -156,15 +158,14 @@ where
     pub fn size(&self) -> usize {
         match self {
             Self::Constant(x, _) => *x,
-            Self::Single(x, _, _) => *x,
-            Self::Multiple(x, _, _) => *x,
+            Self::Param(x, _, _) => *x,
         }
     }
 
     #[inline]
-    pub fn vector(self) -> Option<Vec<f32>> {
+    pub fn param(self) -> Option<Vec<f32>> {
         match self {
-            Self::Multiple(_, _, vector) => Some(vector),
+            Self::Param(_, _, param) => Some(param),
             _ => None,
         }
     }
@@ -189,11 +190,11 @@ where
             }
         }
         kernel = kernel.iter().map(|&x| x / sum).collect();
-        Ok(Self::Multiple(size, Arc::new(|n, i| n.kernel(&i)), kernel))
+        Ok(Self::Param(size, Arc::new(|n, i| n.kernel(&i)), kernel))
     }
 
     fn gauss_sharpen_function(size: usize, sigma: f32) -> Result<Self, String> {
-        let mut kernel = Self::gauss_blur_function(size, sigma)?.vector().unwrap();
+        let mut kernel = Self::gauss_blur_function(size, sigma)?.param().unwrap();
         let center = size / 2;
         let center_idx = center * size + center;
         for i in 0..size * size {
@@ -204,7 +205,7 @@ where
             }
         }
 
-        Ok(Self::Multiple(size, Arc::new(|n, i| n.kernel(&i)), kernel))
+        Ok(Self::Param(size, Arc::new(|n, i| n.kernel(&i)), kernel))
     }
 
     pub fn generate_dog_kernel(
@@ -213,15 +214,15 @@ where
         sigma2: f32,
         p: f32,
     ) -> Result<Self, String> {
-        let gauss1 = Self::gauss_blur_function(size, sigma1)?.vector().unwrap();
-        let gauss2 = Self::gauss_blur_function(size, sigma2)?.vector().unwrap();
+        let gauss1 = Self::gauss_blur_function(size, sigma1)?.param().unwrap();
+        let gauss2 = Self::gauss_blur_function(size, sigma2)?.param().unwrap();
         let mul = match p {
             0.0 => 16.0 - (sigma1 - sigma2),
             _ => p,
         };
         let kernel =
             gauss1.into_iter().zip(gauss2.into_iter()).map(|(a, b)| (a - b) * mul).collect();
-        Ok(Self::Multiple(size, Arc::new(|n, i| n.kernel(&i)), kernel))
+        Ok(Self::Param(size, Arc::new(|n, i| n.kernel(&i)), kernel))
     }
 
     fn motion_blur_function(size: usize, l: f32, theta: f32) -> Result<Self, String> {
@@ -286,7 +287,7 @@ where
             kernel[y * size + x] = weight;
         }
 
-        Ok(Self::Multiple(size, Arc::new(|n, i| n.kernel(&i)), kernel))
+        Ok(Self::Param(size, Arc::new(|n, i| n.kernel(&i)), kernel))
     }
 
     fn emboss_function(size: usize, direction: String) -> Result<Function<T>, String> {
@@ -319,6 +320,6 @@ where
             }
         }
 
-        Ok(Self::Multiple(size, Arc::new(|n, i| n.kernel(&i)), kernel))
+        Ok(Self::Param(size, Arc::new(|n, i| n.kernel(&i)), kernel))
     }
 }

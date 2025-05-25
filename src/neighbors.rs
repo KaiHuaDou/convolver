@@ -1,4 +1,4 @@
-use num::Num;
+use num::*;
 
 pub enum Pos {
     Max,
@@ -8,7 +8,7 @@ pub enum Pos {
 
 pub struct Neighbors<T>
 where
-    T: Num + Copy + Clone + Sync + Send + PartialOrd + From<u8>,
+    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd,
 {
     pub size: usize,
     pub data: Vec<[T; 4]>,
@@ -16,7 +16,7 @@ where
 
 impl<T> Neighbors<T>
 where
-    T: Num + Copy + Clone + Sync + Send + PartialOrd + From<u8>,
+    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd,
 {
     #[inline]
     pub fn none(&self) -> [T; 4] {
@@ -27,20 +27,37 @@ where
     pub fn blur(&self) -> [T; 4] {
         let (sum_r, sum_g, sum_b, sum_a) =
             self.data.iter().fold((0f32, 0f32, 0f32, 0f32), |(r, g, b, a), pixel| {
-                (r + pixel[0].into(), g + pixel[1].into(), b + pixel[2].into(), a + pixel[3].into())
+                (
+                    r + <f32 as num::NumCast>::from(pixel[0]).unwrap(),
+                    g + <f32 as num::NumCast>::from(pixel[1]).unwrap(),
+                    b + <f32 as num::NumCast>::from(pixel[2]).unwrap(),
+                    a + <f32 as num::NumCast>::from(pixel[3]).unwrap(),
+                )
             });
         let area = self.data.len() as f32;
         [
-            ((sum_r + area / 2.0) / area).into(),
-            ((sum_g + area / 2.0) / area).into(),
-            ((sum_b + area / 2.0) / area).into(),
-            ((sum_a + area / 2.0) / area).into(),
+            T::from((sum_r + area / 2.0) / area).unwrap(),
+            T::from((sum_g + area / 2.0) / area).unwrap(),
+            T::from((sum_b + area / 2.0) / area).unwrap(),
+            T::from((sum_a + area / 2.0) / area).unwrap(),
         ]
     }
 
     #[inline]
-    pub fn position(&self, location: Pos) -> [T; 4] {
-        positional_value::<T>(&self.data, location)
+    pub fn positional(&self, location: Pos) -> [T; 4] {
+        let mut result: [T; 4] = [T::from(0u8).unwrap(); 4];
+        result.iter_mut().enumerate().for_each(|(i, value)| {
+            let mut channels: Vec<T> = self.data.iter().map(|pixel| pixel[i]).collect();
+            channels.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+
+            let len = self.data.len();
+            *value = match location {
+                Pos::Min => channels[0],
+                Pos::Max => channels[len - 1],
+                Pos::Mid => channels[len / 2],
+            };
+        });
+        result
     }
 
     #[inline]
@@ -48,40 +65,21 @@ where
         let (mut sum_r, mut sum_g, mut sum_b) = (0.0f32, 0.0f32, 0.0f32);
 
         for (&k, data) in kernel.iter().zip(self.data.iter()) {
-            sum_r += data[0].into() * k;
-            sum_g += data[1].into() * k;
-            sum_b += data[2].into() * k;
+            sum_r += <f32 as num::NumCast>::from(data[0]).unwrap() * k;
+            sum_g += <f32 as num::NumCast>::from(data[1]).unwrap() * k;
+            sum_b += <f32 as num::NumCast>::from(data[2]).unwrap() * k;
         }
 
         [
-            sum_r.clamp(0.0, 255.0).into(),
-            sum_g.clamp(0.0, 255.0).into(),
-            sum_b.clamp(0.0, 255.0).into(),
-            255.into(),
+            T::from(sum_r.clamp(0.0, 255.0)).unwrap(),
+            T::from(sum_g.clamp(0.0, 255.0)).unwrap(),
+            T::from(sum_b.clamp(0.0, 255.0)).unwrap(),
+            T::from(255).unwrap(),
         ]
     }
 
     #[inline]
     pub fn inner(&self) -> [T; 4] {
-        [T::from(0u8); 4]
+        [T::from(0u8).unwrap(); 4]
     }
-}
-
-fn positional_value<T>(data: &Vec<[T; 4]>, location: Pos) -> [T; 4]
-where
-    T: Copy + PartialOrd + From<u8>,
-{
-    let mut result: [T; 4] = [T::from(0u8); 4];
-    result.iter_mut().enumerate().for_each(|(i, value)| {
-        let mut channels: Vec<T> = data.iter().map(|pixel| pixel[i]).collect();
-        channels.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
-
-        let len = data.len();
-        *value = match location {
-            Pos::Min => channels[0],
-            Pos::Max => channels[len - 1],
-            Pos::Mid => channels[len / 2],
-        };
-    });
-    result
 }
