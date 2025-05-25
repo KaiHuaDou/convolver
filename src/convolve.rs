@@ -2,6 +2,7 @@ use crate::function::*;
 use crate::matrix::*;
 use crate::neighbors::*;
 use clap::Parser;
+use num::Num;
 use rayon::prelude::*;
 use std::process::exit;
 use std::str::FromStr;
@@ -27,7 +28,7 @@ struct ConvolveCli {
 
 pub fn convolve_mode() {
     let cli = ConvolveCli::parse();
-    let mut matrix = Matrix::read_from_png(&cli.input).unwrap_or_else(|e| {
+    let mut matrix: Matrix<u8> = Matrix::read_from_png(&cli.input).unwrap_or_else(|e| {
         eprintln!("Read PNG occurs error: {}", e);
         exit(1);
     });
@@ -51,9 +52,12 @@ pub fn convolve_mode() {
     });
 }
 
-impl Matrix {
-    pub fn convolve(&mut self, kernel: &Function) {
-        let mut result = vec![[0u8, 0u8, 0u8, 0u8]; self.rows * self.cols];
+impl<T> Matrix<T>
+where
+    T: Num + Copy + Clone + Sync + Send + PartialOrd + From<u8>,
+{
+    pub fn convolve(&mut self, kernel: &Function<T>) {
+        let mut result = vec![[T::from(0u8); 4]; self.rows * self.cols];
         let size = kernel.size();
         let iter: isize = (size as isize - 1) / 2;
         let area: usize = size * size;
@@ -63,7 +67,7 @@ impl Matrix {
             let row = (index / self.cols) as isize;
             let col = (index % self.cols) as isize;
 
-            let mut neighbors = vec![[0u8; 4]; area];
+            let mut neighbors = vec![[T::from(0u8); 4]; area];
             for drow in -iter..=iter {
                 for dcol in -iter..=iter {
                     let crow = (row + drow).clamp(0, self.rows as isize - 1);

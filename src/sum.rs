@@ -1,5 +1,6 @@
 use crate::matrix::*;
 use clap::Parser;
+use num::Num;
 use rayon::prelude::*;
 use std::process::exit;
 
@@ -22,23 +23,26 @@ struct SumCli {
 pub fn sum_mode() {
     let cli = SumCli::parse();
 
-    let a = Matrix::read_from_png(&cli.input1).unwrap_or_else(|e| {
+    let a = Matrix::<u8>::read_from_png(&cli.input1).unwrap_or_else(|e| {
         eprintln!("Read PNG 1 occurs error: {}", e);
         exit(1);
     });
-    let b = Matrix::read_from_png(&cli.input2).unwrap_or_else(|e| {
+    let b = Matrix::<u8>::read_from_png(&cli.input2).unwrap_or_else(|e| {
         eprintln!("Read PNG 2 occurs error: {}", e);
         exit(1);
     });
-    let matrix = Matrix::add(a, b, cli.migrate).unwrap_or_else(|e| {
+    let matrix = Matrix::<u8>::add(a, b, cli.migrate).unwrap_or_else(|e| {
         eprintln!("Add matrix occurs error: {}", e);
         exit(1);
     });
     matrix.write_to_png(&cli.output).unwrap_or_else(|e| eprintln!("Write PNG occurs error: {}", e));
 }
 
-impl Matrix {
-    pub fn add(a: Matrix, b: Matrix, migrate: bool) -> Result<Matrix, String> {
+impl<T> Matrix<T>
+where
+    T: Num + Copy + Clone + Sync + Send + PartialOrd + From<u8>,
+{
+    pub fn add(a: Matrix<T>, b: Matrix<T>, migrate: bool) -> Result<Matrix<T>, String> {
         if a.rows != b.rows || a.cols != b.cols {
             return Err("The size of two matrix should be same".into());
         }
@@ -46,9 +50,9 @@ impl Matrix {
         result.data.par_iter_mut().enumerate().for_each(|(index, value)| {
             let mut r = [0u8; 4];
             for i in 0..4 {
-                let x = a.data[index][i] as f32;
-                let y = b.data[index][i] as f32;
-                r[i] = ((x + y) / if migrate { 2.0 } else { 1.0 }).clamp(0.0, 255.0) as u8;
+                let x: f32 = a.data[index][i].into();
+                let y: f32 = b.data[index][i].into();
+                r[i] = ((x + y) / if migrate { 2.0 } else { 1.0 }).clamp(0.0, 255.0).into();
             }
             *value = r;
         });

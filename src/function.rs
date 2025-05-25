@@ -1,18 +1,22 @@
 use crate::neighbors::*;
 use lazy_static::lazy_static;
+use num::Num;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-type KernelClosure = Arc<dyn Fn(Neighbors) -> [u8; 4] + Sync + Send>;
-type KernelSingleClosure = Arc<dyn Fn(Neighbors, f32) -> [u8; 4] + Sync + Send>;
-type KernelMultipleClosure = Arc<dyn Fn(Neighbors, &Vec<f32>) -> [u8; 4] + Sync + Send>;
+type KernelClosure<T> = Arc<dyn Fn(Neighbors<T>) -> [T; 4] + Sync + Send>;
+type KernelSingleClosure<T> = Arc<dyn Fn(Neighbors<T>, f32) -> [T; 4] + Sync + Send>;
+type KernelMultipleClosure<T> = Arc<dyn Fn(Neighbors<T>, &Vec<f32>) -> [T; 4] + Sync + Send>;
 
 #[derive(Clone)]
-pub enum Function {
-    Constant(usize, KernelClosure),
-    Single(usize, KernelSingleClosure, f32),
-    Multiple(usize, KernelMultipleClosure, Vec<f32>),
+pub enum Function<T>
+where
+    T: Num + Copy + Clone + Sync + Send + PartialOrd + From<u8>,
+{
+    Constant(usize, KernelClosure<T>),
+    Single(usize, KernelSingleClosure<T>, f32),
+    Multiple(usize, KernelMultipleClosure<T>, Vec<f32>),
 }
 
 lazy_static! {
@@ -64,7 +68,7 @@ lazy_static! {
     };
 }
 
-impl FromStr for Function {
+impl FromStr for Function<u8> {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -81,11 +85,8 @@ impl FromStr for Function {
             "none" => Ok(Function::Constant(size, Arc::new(|n| n.none()))),
             "blur" => Ok(Function::Constant(size, Arc::new(|n| n.blur()))),
             "min" => Ok(Function::Constant(size, Arc::new(|n| n.position(Pos::Min)))),
-            "min_hsla" => Ok(Function::Constant(size, Arc::new(|n| n.position_hsla(Pos::Min)))),
             "median" => Ok(Function::Constant(size, Arc::new(|n| n.position(Pos::Mid)))),
-            "median_hsla" => Ok(Function::Constant(size, Arc::new(|n| n.position_hsla(Pos::Mid)))),
             "max" => Ok(Function::Constant(size, Arc::new(|n| n.position(Pos::Max)))),
-            "max_hsla" => Ok(Function::Constant(size, Arc::new(|n| n.position_hsla(Pos::Max)))),
             "inner" => Ok(Function::Constant(size, Arc::new(|n| n.inner()))),
             "motion" => {
                 if parts.len() < 4 {
@@ -138,9 +139,12 @@ impl FromStr for Function {
     }
 }
 
-impl Function {
+impl<T> Function<T>
+where
+    T: Num + Copy + Clone + Sync + Send + PartialOrd + From<u8>,
+{
     #[inline]
-    pub fn calculate(&self, input: Neighbors) -> [u8; 4] {
+    pub fn calculate(&self, input: Neighbors<T>) -> [T; 4] {
         match self {
             Self::Constant(_, f) => f(input),
             Self::Single(_, f, x) => f(input, *x),
@@ -285,7 +289,7 @@ impl Function {
         Ok(Self::Multiple(size, Arc::new(|n, i| n.kernel(&i)), kernel))
     }
 
-    fn emboss_function(size: usize, direction: String) -> Result<Function, String> {
+    fn emboss_function(size: usize, direction: String) -> Result<Function<T>, String> {
         let center = size / 2;
         let (dx, dy): (isize, isize) = match direction.to_lowercase().as_str() {
             "n" => (0, -1),

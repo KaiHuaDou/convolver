@@ -1,20 +1,27 @@
+use num::Num;
 use png;
 use std::fs;
 use std::io;
 
-pub struct Matrix {
+pub struct Matrix<T>
+where
+    T: Num + Copy + Clone + Sync + Send + PartialOrd + From<u8>,
+{
     pub rows: usize,
     pub cols: usize,
-    pub data: Vec<[u8; 4]>,
+    pub data: Vec<[T; 4]>,
 }
 
-impl Matrix {
+impl<T> Matrix<T>
+where
+    T: Num + Copy + Clone + Sync + Send + PartialOrd + From<u8>,
+{
     pub fn new(rows: usize, cols: usize) -> Self {
-        Self { rows: rows, cols: cols, data: vec![[0u8; 4]; rows * cols] }
+        Self { rows: rows, cols: cols, data: vec![[T::from(0u8); 4]; rows * cols] }
     }
 
     #[inline]
-    pub fn get(&self, row: isize, col: isize) -> [u8; 4] {
+    pub fn get(&self, row: isize, col: isize) -> [T; 4] {
         unsafe {
             let index = row * self.cols as isize + col;
             *self.data.get_unchecked(index as usize)
@@ -22,11 +29,13 @@ impl Matrix {
     }
 
     #[inline]
-    pub fn set(&mut self, row: usize, col: usize, value: [u8; 4]) {
+    pub fn set(&mut self, row: usize, col: usize, value: [T; 4]) {
         let index = row * self.cols + col;
         self.data[index] = value;
     }
+}
 
+impl Matrix<u8> {
     pub fn read_from_png(filename: &str) -> io::Result<Self> {
         let file = fs::File::open(filename)?;
         let mut decoder = png::Decoder::new(file);
@@ -54,10 +63,10 @@ impl Matrix {
 
         let data = data_bytes
             .chunks_exact(4)
-            .map(|chunk| [chunk[0], chunk[1], chunk[2], chunk[3]])
+            .map(|chunk| [chunk[0].into(), chunk[1].into(), chunk[2].into(), chunk[3].into()])
             .collect();
 
-        Ok(Matrix { rows: height, cols: width, data })
+        Ok(Matrix { rows: height, cols: width, data: data })
     }
 
     pub fn write_to_png(&self, filename: &str) -> io::Result<()> {
