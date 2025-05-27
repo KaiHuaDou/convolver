@@ -1,8 +1,10 @@
+use crate::colormode::*;
 use crate::matrix::*;
 use num::*;
 use palette::IntoColor;
 use png;
 use std::any::TypeId;
+use std::cmp::PartialOrd;
 use std::fs;
 use std::io;
 
@@ -11,16 +13,16 @@ where
     T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + 'static,
 {
     pub fn read_png(filename: &str) -> io::Result<Self> {
-        if TypeId::of::<T>() == TypeId::of::<u8>() {
-            let m = Matrix::<u8>::_read_png(filename)?;
+        if TypeId::of::<T>() == TypeId::of::<Rgba>() {
+            let m = Matrix::<Rgba>::_read_png(filename)?;
             let ptr = Box::into_raw(Box::new(m)) as *mut Matrix<T>;
             Ok(unsafe { *Box::from_raw(ptr) })
-        } else if TypeId::of::<T>() == TypeId::of::<f32>() {
-            let m = Matrix::<f32>::_read_png(filename)?;
+        } else if TypeId::of::<T>() == TypeId::of::<Hsla>() {
+            let m = Matrix::<Hsla>::_read_png(filename)?;
             let ptr = Box::into_raw(Box::new(m)) as *mut Matrix<T>;
             Ok(unsafe { *Box::from_raw(ptr) })
-        } else if TypeId::of::<T>() == TypeId::of::<i8>() {
-            let m = Matrix::<i8>::_read_png(filename)?;
+        } else if TypeId::of::<T>() == TypeId::of::<Luva>() {
+            let m = Matrix::<Luva>::_read_png(filename)?;
             let ptr = Box::into_raw(Box::new(m)) as *mut Matrix<T>;
             Ok(unsafe { *Box::from_raw(ptr) })
         } else {
@@ -29,16 +31,16 @@ where
     }
 
     pub fn write_png(&self, filename: &str) -> std::io::Result<()> {
-        if TypeId::of::<T>() == TypeId::of::<u8>() {
-            let ptr = self as *const Matrix<T> as *const Matrix<u8>;
+        if TypeId::of::<T>() == TypeId::of::<Rgba>() {
+            let ptr = self as *const Matrix<T> as *const Matrix<Rgba>;
             let m = unsafe { &*ptr };
             m._write_png(filename)
-        } else if TypeId::of::<T>() == TypeId::of::<f32>() {
-            let ptr = self as *const Matrix<T> as *const Matrix<f32>;
+        } else if TypeId::of::<T>() == TypeId::of::<Hsla>() {
+            let ptr = self as *const Matrix<T> as *const Matrix<Hsla>;
             let m = unsafe { &*ptr };
             m._write_png(filename)
-        } else if TypeId::of::<T>() == TypeId::of::<i8>() {
-            let ptr = self as *const Matrix<T> as *const Matrix<i8>;
+        } else if TypeId::of::<T>() == TypeId::of::<Luva>() {
+            let ptr = self as *const Matrix<T> as *const Matrix<Luva>;
             let m = unsafe { &*ptr };
             m._write_png(filename)
         } else {
@@ -47,7 +49,7 @@ where
     }
 }
 
-impl Matrix<u8> {
+impl Matrix<Rgba> {
     pub fn _read_png(filename: &str) -> io::Result<Self> {
         let file = fs::File::open(filename)?;
         let mut decoder = png::Decoder::new(file);
@@ -75,7 +77,7 @@ impl Matrix<u8> {
 
         let data = data_bytes
             .chunks_exact(4)
-            .map(|chunk| [chunk[0].into(), chunk[1].into(), chunk[2].into(), chunk[3].into()])
+            .map(|chunk| [Rgba(chunk[0]), Rgba(chunk[1]), Rgba(chunk[2]), Rgba(chunk[3])])
             .collect();
 
         Ok(Matrix { rows: height, cols: width, data: data })
@@ -95,61 +97,26 @@ impl Matrix<u8> {
     }
 }
 
-impl Matrix<f32> {
+impl Matrix<Hsla> {
     pub fn _read_png(filename: &str) -> io::Result<Self> {
-        let matrixu8 = Matrix::<u8>::_read_png(filename)?;
+        let matrixu8 = Matrix::<Rgba>::_read_png(filename)?;
         let dataf32 = matrixu8
             .data
             .iter()
             .map(|x| {
                 let color: palette::Hsla = palette::Srgba::new(
-                    x[0] as f32 / 255.0,
-                    x[1] as f32 / 255.0,
-                    x[2] as f32 / 255.0,
-                    x[3] as f32 / 255.0,
+                    x[0].0 as f32 / 255.0,
+                    x[1].0 as f32 / 255.0,
+                    x[2].0 as f32 / 255.0,
+                    x[3].0 as f32 / 255.0,
                 )
                 .into_color();
-                [color.hue.into_degrees(), color.saturation, color.lightness, color.alpha]
-            })
-            .collect();
-        Ok(Matrix { rows: matrixu8.rows, cols: matrixu8.cols, data: dataf32 })
-    }
-
-    pub fn _write_png(&self, filename: &str) -> io::Result<()> {
-        let datau8 = self
-            .data
-            .iter()
-            .map(|x| {
-                let color: palette::Srgba = palette::Hsla::new(x[0], x[1], x[2], x[3]).into_color();
                 [
-                    (color.red * 255.0) as u8,
-                    (color.green * 255.0) as u8,
-                    (color.blue * 255.0) as u8,
-                    (color.alpha * 255.0) as u8,
+                    Hsla(color.hue.into_degrees()),
+                    Hsla(color.saturation),
+                    Hsla(color.lightness),
+                    Hsla(color.alpha),
                 ]
-            })
-            .collect();
-        let matrixu8 = Matrix::<u8> { rows: self.rows, cols: self.cols, data: datau8 };
-        matrixu8._write_png(filename)?;
-        Ok(())
-    }
-}
-
-impl Matrix<i8> {
-    pub fn _read_png(filename: &str) -> io::Result<Self> {
-        let matrixu8 = Matrix::<u8>::_read_png(filename)?;
-        let dataf32 = matrixu8
-            .data
-            .iter()
-            .map(|x| {
-                let color: palette::Luva = palette::Srgba::new(
-                    x[0] as f32 / 255.0,
-                    x[1] as f32 / 255.0,
-                    x[2] as f32 / 255.0,
-                    x[3] as f32 / 255.0,
-                )
-                .into_color();
-                [color.l as i8, color.u as i8, color.v as i8, color.alpha as i8]
             })
             .collect();
         Ok(Matrix { rows: matrixu8.rows, cols: matrixu8.cols, data: dataf32 })
@@ -161,18 +128,58 @@ impl Matrix<i8> {
             .iter()
             .map(|x| {
                 let color: palette::Srgba =
-                    palette::Luva::new(x[0] as f32, x[1] as f32, x[2] as f32, x[3] as f32)
-                        .into_color();
+                    palette::Hsla::new(x[0].0, x[1].0, x[2].0, x[3].0).into_color();
                 [
-                    (color.red * 255.0) as u8,
-                    (color.green * 255.0) as u8,
-                    (color.blue * 255.0) as u8,
-                    (color.alpha * 255.0) as u8,
+                    Rgba((color.red * 255.0) as u8),
+                    Rgba((color.green * 255.0) as u8),
+                    Rgba((color.blue * 255.0) as u8),
+                    Rgba((color.alpha * 255.0) as u8),
                 ]
             })
             .collect();
-        let matrixu8 = Matrix::<u8> { rows: self.rows, cols: self.cols, data: datau8 };
-        matrixu8._write_png(filename)?;
+        let matrix_rgba = Matrix::<Rgba> { rows: self.rows, cols: self.cols, data: datau8 };
+        matrix_rgba._write_png(filename)?;
+        Ok(())
+    }
+}
+
+impl Matrix<Luva> {
+    pub fn _read_png(filename: &str) -> io::Result<Self> {
+        let matrix_rgba = Matrix::<Rgba>::_read_png(filename)?;
+        let dataf32 = matrix_rgba
+            .data
+            .iter()
+            .map(|x| {
+                let color: palette::Luva = palette::Srgba::new(
+                    x[0].0 as f32 / 255.0,
+                    x[1].0 as f32 / 255.0,
+                    x[2].0 as f32 / 255.0,
+                    x[3].0 as f32 / 255.0,
+                )
+                .into_color();
+                [Luva(color.l), Luva(color.u), Luva(color.v), Luva(color.alpha)]
+            })
+            .collect();
+        Ok(Matrix { rows: matrix_rgba.rows, cols: matrix_rgba.cols, data: dataf32 })
+    }
+
+    pub fn _write_png(&self, filename: &str) -> io::Result<()> {
+        let datau8 = self
+            .data
+            .iter()
+            .map(|x| {
+                let color: palette::Srgba =
+                    palette::Luva::new(x[0].0, x[1].0, x[2].0, x[3].0).into_color();
+                [
+                    Rgba((color.red * 255.0) as u8),
+                    Rgba((color.green * 255.0) as u8),
+                    Rgba((color.blue * 255.0) as u8),
+                    Rgba((color.alpha * 255.0) as u8),
+                ]
+            })
+            .collect();
+        let matrix_rgba = Matrix::<Rgba> { rows: self.rows, cols: self.cols, data: datau8 };
+        matrix_rgba._write_png(filename)?;
         Ok(())
     }
 }

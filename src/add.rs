@@ -1,3 +1,4 @@
+use crate::colormode::*;
 use crate::matrix::*;
 use clap::Parser;
 use num::*;
@@ -23,15 +24,15 @@ struct AddCli {
 pub fn add_cli() {
     let cli = AddCli::parse();
 
-    let a = Matrix::<u8>::_read_png(&cli.input1).unwrap_or_else(|e| {
+    let a = Matrix::<Rgba>::_read_png(&cli.input1).unwrap_or_else(|e| {
         eprintln!("Read PNG 1 occurs error: {}", e);
         exit(1);
     });
-    let b = Matrix::<u8>::_read_png(&cli.input2).unwrap_or_else(|e| {
+    let b = Matrix::<Rgba>::_read_png(&cli.input2).unwrap_or_else(|e| {
         eprintln!("Read PNG 2 occurs error: {}", e);
         exit(1);
     });
-    let matrix = Matrix::<u8>::add(a, b, cli.migrate).unwrap_or_else(|e| {
+    let matrix = Matrix::<Rgba>::add(a, b, cli.migrate).unwrap_or_else(|e| {
         eprintln!("Add matrix occurs error: {}", e);
         exit(1);
     });
@@ -50,8 +51,8 @@ where
         result.data.par_iter_mut().enumerate().for_each(|(index, value)| {
             let mut r = [T::from(0u8).unwrap(); 4];
             for i in 0..4 {
-                let x: f32 = <f32 as num::NumCast>::from(a.data[index][i]).unwrap();
-                let y: f32 = <f32 as num::NumCast>::from(b.data[index][i]).unwrap();
+                let x: f32 = <f32 as NumCast>::from(a.data[index][i]).unwrap();
+                let y: f32 = <f32 as NumCast>::from(b.data[index][i]).unwrap();
                 r[i] =
                     T::from(((x + y) / if migrate { 2.0 } else { 1.0 }).clamp(0.0, 255.0)).unwrap();
             }

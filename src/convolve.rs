@@ -12,7 +12,7 @@ use std::time::Instant;
 #[command(version)]
 #[command(about = "A general image convolver", long_about = None)]
 struct ConvolveCli {
-    #[arg(default_value_t = String::from("crgba"))]
+    #[arg(default_value_t = String::from("rgba"))]
     mode: String,
     #[arg(default_value_t = String::from("input.png"))]
     input: String,

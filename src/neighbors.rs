@@ -28,10 +28,10 @@ where
         let (sum_r, sum_g, sum_b, sum_a) =
             self.data.iter().fold((0f32, 0f32, 0f32, 0f32), |(r, g, b, a), pixel| {
                 (
-                    r + <f32 as num::NumCast>::from(pixel[0]).unwrap(),
-                    g + <f32 as num::NumCast>::from(pixel[1]).unwrap(),
-                    b + <f32 as num::NumCast>::from(pixel[2]).unwrap(),
-                    a + <f32 as num::NumCast>::from(pixel[3]).unwrap(),
+                    r + <f32 as NumCast>::from(pixel[0]).unwrap(),
+                    g + <f32 as NumCast>::from(pixel[1]).unwrap(),
+                    b + <f32 as NumCast>::from(pixel[2]).unwrap(),
+                    a + <f32 as NumCast>::from(pixel[3]).unwrap(),
                 )
             });
         let area = self.data.len() as f32;
@@ -65,16 +65,16 @@ where
         let (mut sum_r, mut sum_g, mut sum_b) = (0.0f32, 0.0f32, 0.0f32);
 
         for (&k, data) in kernel.iter().zip(self.data.iter()) {
-            sum_r += <f32 as num::NumCast>::from(data[0]).unwrap() * k;
-            sum_g += <f32 as num::NumCast>::from(data[1]).unwrap() * k;
-            sum_b += <f32 as num::NumCast>::from(data[2]).unwrap() * k;
+            sum_r += <f32 as NumCast>::from(data[0]).unwrap() * k;
+            sum_g += <f32 as NumCast>::from(data[1]).unwrap() * k;
+            sum_b += <f32 as NumCast>::from(data[2]).unwrap() * k;
         }
 
         [
             T::from(sum_r.clamp(0.0, 255.0)).unwrap(),
             T::from(sum_g.clamp(0.0, 255.0)).unwrap(),
             T::from(sum_b.clamp(0.0, 255.0)).unwrap(),
-            T::from(255).unwrap(),
+            T::from(255u8).unwrap(),
         ]
     }
 
