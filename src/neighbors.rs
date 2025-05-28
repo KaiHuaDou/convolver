@@ -1,5 +1,7 @@
 use num::*;
 
+use crate::colormode::ValueLimits;
+
 pub enum Pos {
     Max,
     Mid,
@@ -16,7 +18,7 @@ where
 
 impl<T> Neighbors<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd,
+    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + ValueLimits,
 {
     #[inline]
     pub fn none(&self) -> [T; 4] {
@@ -62,18 +64,18 @@ where
 
     #[inline]
     pub fn kernel(&self, kernel: &Vec<f32>) -> [T; 4] {
-        let (mut sum_r, mut sum_g, mut sum_b) = (0.0f32, 0.0f32, 0.0f32);
+        let (mut sum_0, mut sum_1, mut sum_2) = (0.0f32, 0.0f32, 0.0f32);
 
         for (&k, data) in kernel.iter().zip(self.data.iter()) {
-            sum_r += <f32 as NumCast>::from(data[0]).unwrap() * k;
-            sum_g += <f32 as NumCast>::from(data[1]).unwrap() * k;
-            sum_b += <f32 as NumCast>::from(data[2]).unwrap() * k;
+            sum_0 += <f32 as NumCast>::from(data[0]).unwrap() * k;
+            sum_1 += <f32 as NumCast>::from(data[1]).unwrap() * k;
+            sum_2 += <f32 as NumCast>::from(data[2]).unwrap() * k;
         }
 
         [
-            T::from(sum_r.clamp(0.0, 255.0)).unwrap(),
-            T::from(sum_g.clamp(0.0, 255.0)).unwrap(),
-            T::from(sum_b.clamp(0.0, 255.0)).unwrap(),
+            T::from(sum_0).unwrap().clamp(0),
+            T::from(sum_1).unwrap().clamp(1),
+            T::from(sum_2).unwrap().clamp(2),
             T::from(255u8).unwrap(),
         ]
     }

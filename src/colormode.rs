@@ -2,10 +2,26 @@ use num::*;
 use std::cmp::{Ordering, PartialEq, PartialOrd};
 use std::ops::{Add, Div, Mul, Rem, Sub};
 
+pub trait ValueLimits {
+    fn clamp(&self, channel: u8) -> Self;
+}
+
 macro_rules! impl_color_type {
-    ($type:ident, $base:tt) => {
+    ($type:ident, $base:tt, $max0:expr, $max1:expr,$max2:expr,$min0:expr,$min1:expr,$min2:expr) => {
         #[derive(Copy, Clone, PartialEq)]
         pub struct $type(pub $base);
+
+        impl ValueLimits for $type {
+            #[inline]
+            fn clamp(&self, channel: u8) -> $type {
+                match channel {
+                    0 => $type(self.0.min($max0).max($min0)),
+                    1 => $type(self.0.min($max1).max($min1)),
+                    2 => $type(self.0.min($max2).max($min2)),
+                    _ => unreachable!(),
+                }
+            }
+        }
 
         impl PartialOrd for $type {
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -108,6 +124,6 @@ macro_rules! impl_color_type {
     };
 }
 
-impl_color_type!(Rgba, u8);
-impl_color_type!(Hsla, f32);
-impl_color_type!(Luva, f32);
+impl_color_type!(Rgba, u8, 255u8, 255u8, 255u8, 0u8, 0u8, 0u8);
+impl_color_type!(Hsla, f32, 180.0f32, 1.0f32, 1.0f32, -180.0f32, 0.0f32, 0.0f32);
+impl_color_type!(Luva, f32, 100.0f32, 176.0f32, 108.0f32, 0.0f32, -84.0f32, -135.0f32);

@@ -1,3 +1,4 @@
+use crate::colormode::*;
 use crate::function::*;
 use crate::matrix::*;
 use crate::neighbors::*;
@@ -28,7 +29,7 @@ struct ConvolveCli {
 
 pub fn convolve_cli<T>()
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + 'static,
+    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + ValueLimits + 'static,
 {
     let cli = ConvolveCli::parse();
     let mut matrix: Matrix<T> = Matrix::<T>::read_png(&cli.input).unwrap_or_else(|e| {
@@ -57,7 +58,7 @@ where
 
 impl<T> Matrix<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + 'static,
+    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + ValueLimits + 'static,
 {
     pub fn convolve(&mut self, kernel: &Function<T>) {
         let mut result = vec![[T::from(0u8).unwrap(); 4]; self.rows * self.cols];

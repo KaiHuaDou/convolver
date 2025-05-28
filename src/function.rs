@@ -1,3 +1,4 @@
+use crate::colormode::*;
 use crate::neighbors::*;
 use lazy_static::lazy_static;
 use num::*;
@@ -69,7 +70,7 @@ lazy_static! {
 
 impl<T> FromStr for Function<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd,
+    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + ValueLimits,
 {
     type Err = String;
 
@@ -143,7 +144,7 @@ where
 
 impl<T> Function<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd,
+    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + ValueLimits,
 {
     #[inline]
     pub fn calculate(&self, input: Neighbors<T>) -> [T; 4] {
