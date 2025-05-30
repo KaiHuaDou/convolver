@@ -28,6 +28,9 @@ convolver <MODE[rgba/hsla/luva]> \
     -i <进度指示器[*]>
 ```
 
+> [!NOTE]
+> 在部分情况下，luva 模式会产生极为突出的效果。
+
 ### 支持的卷积方法
 
 > [!NOTE]
@@ -42,6 +45,7 @@ convolver <MODE[rgba/hsla/luva]> \
 - `*-gauss-blur-σ`：高斯模糊
 - `*-gauss-sharpen-σ`：高斯锐化
 - `*-max`：逐通道取最大值
+- `*-leave_c`：保留特定通道，`c: u8`可选`0 / 1 / 2`
 - `*-median`：逐通道取中值
 - `*-min`：逐通道取最小值
 - `*-motion-l-θ`：运动模糊，`l: f32` 为长度，`θ: f32` 为角度
@@ -54,7 +58,6 @@ convolver <MODE[rgba/hsla/luva]> \
 - `3-sharpen` / `3-sharpen+`：一般锐化效果
 - `3-sobel_h` / `3-sobel_v`：Sobel 边缘检测
 - `3-unsharp_masking`：Unsharp masking 效果
-- `5-inner`：一种奇特的内部模糊方案
 - `5-laplacian_og`：高斯拉普拉斯
 
 ### 图像合并

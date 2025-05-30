@@ -1,22 +1,20 @@
 use crate::colormode::*;
 use crate::neighbors::*;
 use lazy_static::lazy_static;
-use num::*;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-type KernelClosure<T> = Arc<dyn Fn(Neighbors<T>) -> [T; 4] + Sync + Send>;
-type KernelSingleClosure<T> = Arc<dyn Fn(Neighbors<T>, f32) -> [T; 4] + Sync + Send>;
-type KernelMultipleClosure<T> = Arc<dyn Fn(Neighbors<T>, &Vec<f32>) -> [T; 4] + Sync + Send>;
+type KernelClosure<T> = Arc<dyn Fn(Neighbors<T>) -> [T; 4] + Sync + Send + 'static>;
+type KernelParamClosure<T> = Arc<dyn Fn(Neighbors<T>, &Vec<f32>) -> [T; 4] + Sync + Send + 'static>;
 
 #[derive(Clone)]
 pub enum Function<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd,
+    T: ColorValue,
 {
     Constant(usize, KernelClosure<T>),
-    Param(usize, KernelMultipleClosure<T>, Vec<f32>),
+    Param(usize, KernelParamClosure<T>, Vec<f32>),
 }
 
 lazy_static! {
@@ -70,7 +68,7 @@ lazy_static! {
 
 impl<T> FromStr for Function<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + ValueLimits,
+    T: ColorValue,
 {
     type Err = String;
 
@@ -90,7 +88,19 @@ where
             "min" => Ok(Function::Constant(size, Arc::new(|n| n.positional(Pos::Min)))),
             "median" => Ok(Function::Constant(size, Arc::new(|n| n.positional(Pos::Mid)))),
             "max" => Ok(Function::Constant(size, Arc::new(|n| n.positional(Pos::Max)))),
-            "inner" => Ok(Function::Constant(size, Arc::new(|n| n.inner()))),
+            "leave0" => Ok(Function::Constant(size, Arc::new(|n| n.leave(0)))),
+            "leave1" => Ok(Function::Constant(size, Arc::new(|n| n.leave(1)))),
+            "leave2" => Ok(Function::Constant(size, Arc::new(|n| n.leave(2)))),
+            "bilateral" => {
+                if parts.len() < 4 {
+                    return Err("Invalid bilateral function format".into());
+                }
+                let spatial = parts[2].parse::<f32>().unwrap_or(1.0);
+                let range = parts[3].parse::<f32>().unwrap_or(1.0);
+                let mut spatial_kernel = Self::generate_spatial_kernel(size, spatial);
+                spatial_kernel.push(range);
+                Ok(Function::Param(size, Arc::new(|n, i| n.bilateral_filter(&i)), spatial_kernel))
+            }
             "motion" => {
                 if parts.len() < 4 {
                     return Err("Invalid motion function format".into());
@@ -144,7 +154,7 @@ where
 
 impl<T> Function<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + ValueLimits,
+    T: ColorValue,
 {
     #[inline]
     pub fn calculate(&self, input: Neighbors<T>) -> [T; 4] {
@@ -321,5 +331,20 @@ where
         }
 
         Ok(Self::Param(size, Arc::new(|n, i| n.kernel(&i)), kernel))
+    }
+
+    pub fn generate_spatial_kernel(size: usize, spatial_sigma: f32) -> Vec<f32> {
+        let center_idx = size / 2;
+        let mut result: Vec<f32> = Vec::with_capacity(size * size);
+        for y in 0..size {
+            for x in 0..size {
+                let dx = (x as i32 - center_idx as i32).abs() as f32;
+                let dy = (y as i32 - center_idx as i32).abs() as f32;
+                let spatial_dist = (dx * dx + dy * dy).sqrt();
+                result[x * size + y] =
+                    (-spatial_dist * spatial_dist / (2.0 * spatial_sigma * spatial_sigma)).exp();
+            }
+        }
+        result
     }
 }

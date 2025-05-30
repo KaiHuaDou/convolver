@@ -1,16 +1,14 @@
 use crate::colormode::*;
 use crate::matrix::*;
-use num::*;
 use palette::IntoColor;
 use png;
 use std::any::TypeId;
-use std::cmp::PartialOrd;
 use std::fs;
 use std::io;
 
 impl<T> Matrix<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + 'static,
+    T: ColorValue + 'static,
 {
     pub fn read_png(filename: &str) -> io::Result<Self> {
         if TypeId::of::<T>() == TypeId::of::<Rgba>() {

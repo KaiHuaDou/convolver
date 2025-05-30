@@ -1,6 +1,4 @@
-use num::*;
-
-use crate::colormode::ValueLimits;
+use crate::colormode::*;
 
 pub enum Pos {
     Max,
@@ -10,7 +8,7 @@ pub enum Pos {
 
 pub struct Neighbors<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd,
+    T: ColorValue,
 {
     pub size: usize,
     pub data: Vec<[T; 4]>,
@@ -18,7 +16,7 @@ where
 
 impl<T> Neighbors<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + ValueLimits,
+    T: ColorValue,
 {
     #[inline]
     pub fn none(&self) -> [T; 4] {
@@ -29,25 +27,20 @@ where
     pub fn blur(&self) -> [T; 4] {
         let (sum_r, sum_g, sum_b, sum_a) =
             self.data.iter().fold((0f32, 0f32, 0f32, 0f32), |(r, g, b, a), pixel| {
-                (
-                    r + <f32 as NumCast>::from(pixel[0]).unwrap(),
-                    g + <f32 as NumCast>::from(pixel[1]).unwrap(),
-                    b + <f32 as NumCast>::from(pixel[2]).unwrap(),
-                    a + <f32 as NumCast>::from(pixel[3]).unwrap(),
-                )
+                (r + pixel[0].into(), g + pixel[1].into(), b + pixel[2].into(), a + pixel[3].into())
             });
         let area = self.data.len() as f32;
         [
-            T::from((sum_r + area / 2.0) / area).unwrap(),
-            T::from((sum_g + area / 2.0) / area).unwrap(),
-            T::from((sum_b + area / 2.0) / area).unwrap(),
-            T::from((sum_a + area / 2.0) / area).unwrap(),
+            T::from((sum_r + area / 2.0) / area),
+            T::from((sum_g + area / 2.0) / area),
+            T::from((sum_b + area / 2.0) / area),
+            T::from((sum_a + area / 2.0) / area),
         ]
     }
 
     #[inline]
     pub fn positional(&self, location: Pos) -> [T; 4] {
-        let mut result: [T; 4] = [T::from(0u8).unwrap(); 4];
+        let mut result: [T; 4] = [T::from(0u8); 4];
         result.iter_mut().enumerate().for_each(|(i, value)| {
             let mut channels: Vec<T> = self.data.iter().map(|pixel| pixel[i]).collect();
             channels.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
@@ -63,25 +56,56 @@ where
     }
 
     #[inline]
-    pub fn kernel(&self, kernel: &Vec<f32>) -> [T; 4] {
-        let (mut sum_0, mut sum_1, mut sum_2) = (0.0f32, 0.0f32, 0.0f32);
-
-        for (&k, data) in kernel.iter().zip(self.data.iter()) {
-            sum_0 += <f32 as NumCast>::from(data[0]).unwrap() * k;
-            sum_1 += <f32 as NumCast>::from(data[1]).unwrap() * k;
-            sum_2 += <f32 as NumCast>::from(data[2]).unwrap() * k;
-        }
-
-        [
-            T::from(sum_0).unwrap().clamp(0),
-            T::from(sum_1).unwrap().clamp(1),
-            T::from(sum_2).unwrap().clamp(2),
-            T::from(255u8).unwrap(),
-        ]
+    pub fn leave(&self, channel: usize) -> [T; 4] {
+        let mut result = [T::from(0u8), T::from(0u8), T::from(0u8), T::from(255u8)];
+        result[channel] = self.data[self.size * self.size / 2][channel];
+        result
     }
 
     #[inline]
-    pub fn inner(&self) -> [T; 4] {
-        [T::from(0u8).unwrap(); 4]
+    pub fn kernel(&self, kernel: &Vec<f32>) -> [T; 4] {
+        let (mut sum_0, mut sum_1, mut sum_2) = (0.0f32, 0.0f32, 0.0f32);
+        for (&k, data) in kernel.iter().zip(self.data.iter()) {
+            sum_0 += data[0].into() * k;
+            sum_1 += data[1].into() * k;
+            sum_2 += data[2].into() * k;
+        }
+        [T::from(sum_0).clamp(0), T::from(sum_1).clamp(1), T::from(sum_2).clamp(2), T::from(255u8)]
+    }
+
+    #[inline]
+    pub fn bilateral_filter(&self, kernel_sigma: &Vec<f32>) -> [T; 4] {
+        let center = self.size / 2;
+        let area = self.size * self.size;
+        let center_pixel = self.data[center * self.size + center];
+        let mut result = [T::from(0u8); 4];
+        let mut total_weight = 0.0;
+
+        for y in 0..self.size {
+            for x in 0..self.size {
+                let idx = y * self.size + x;
+                let pixel = self.data[idx];
+
+                let mut range_weight = 0.0;
+                for c in 0..4 {
+                    let diff = (pixel[c] - center_pixel[c]).into();
+                    range_weight +=
+                        (-diff * diff / (2.0 * kernel_sigma[area] * kernel_sigma[area])).exp();
+                }
+                range_weight /= 4.0;
+
+                let weight = kernel_sigma[x * self.size + y] * range_weight;
+
+                for c in 0..4 {
+                    result[c] += pixel[c] * T::from(weight);
+                }
+                total_weight += weight;
+            }
+        }
+
+        for c in 0..4 {
+            result[c] /= T::from(total_weight);
+        }
+        result
     }
 }

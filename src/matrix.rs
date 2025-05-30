@@ -1,8 +1,8 @@
-use num::*;
+use crate::colormode::*;
 
 pub struct Matrix<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd,
+    T: ColorValue,
 {
     pub rows: usize,
     pub cols: usize,
@@ -11,11 +11,11 @@ where
 
 impl<T> Matrix<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + 'static,
+    T: ColorValue + 'static,
 {
     #[inline]
     pub fn new(rows: usize, cols: usize) -> Self {
-        Self { rows: rows, cols: cols, data: vec![[T::from(0u8).unwrap(); 4]; rows * cols] }
+        Self { rows: rows, cols: cols, data: vec![[T::from(0u8); 4]; rows * cols] }
     }
 
     #[inline]

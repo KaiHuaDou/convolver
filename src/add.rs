@@ -1,7 +1,6 @@
 use crate::colormode::*;
 use crate::matrix::*;
 use clap::Parser;
-use num::*;
 use rayon::prelude::*;
 use std::process::exit;
 
@@ -41,7 +40,7 @@ pub fn add_cli() {
 
 impl<T> Matrix<T>
 where
-    T: Num + NumCast + Copy + Clone + Sync + Send + PartialOrd + 'static,
+    T: ColorValue + 'static,
 {
     pub fn add(a: Matrix<T>, b: Matrix<T>, migrate: bool) -> Result<Matrix<T>, String> {
         if a.rows != b.rows || a.cols != b.cols {
@@ -49,12 +48,11 @@ where
         }
         let mut result = Matrix::<T>::new(a.rows, a.cols);
         result.data.par_iter_mut().enumerate().for_each(|(index, value)| {
-            let mut r = [T::from(0u8).unwrap(); 4];
+            let mut r = [T::from(0u8); 4];
             for i in 0..4 {
-                let x: f32 = <f32 as NumCast>::from(a.data[index][i]).unwrap();
-                let y: f32 = <f32 as NumCast>::from(b.data[index][i]).unwrap();
-                r[i] =
-                    T::from(((x + y) / if migrate { 2.0 } else { 1.0 }).clamp(0.0, 255.0)).unwrap();
+                let x: f32 = a.data[index][i].into();
+                let y: f32 = b.data[index][i].into();
+                r[i] = T::from(((x + y) / if migrate { 2.0 } else { 1.0 }).clamp(0.0, 255.0));
             }
             *value = r;
         });

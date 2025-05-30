@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![feature(trait_alias)]
 
 mod add;
 mod colormode;

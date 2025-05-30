@@ -1,129 +1,163 @@
-use num::*;
-use std::cmp::{Ordering, PartialEq, PartialOrd};
-use std::ops::{Add, Div, Mul, Rem, Sub};
+use std::cmp::{PartialEq, PartialOrd};
+use std::fmt::*;
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Rem, RemAssign, Sub, SubAssign};
 
-pub trait ValueLimits {
+pub trait ColorValue = Copy
+    + Clone
+    + Sync
+    + Send
+    + PartialOrd
+    + Add<Output = Self>
+    + AddAssign
+    + Sub<Output = Self>
+    + SubAssign
+    + Mul<Output = Self>
+    + MulAssign
+    + Div<Output = Self>
+    + DivAssign
+    + From<u8>
+    + From<f32>
+    + Into<f32>
+    + Clamp;
+
+pub trait Clamp {
     fn clamp(&self, channel: u8) -> Self;
 }
 
-macro_rules! impl_color_type {
-    ($type:ident, $base:tt, $max0:expr, $max1:expr,$max2:expr,$min0:expr,$min1:expr,$min2:expr) => {
-        #[derive(Copy, Clone, PartialEq)]
-        pub struct $type(pub $base);
+macro_rules! impl_newtype {
+    ($type_name:ident, $inner_type:ty, $max0:expr, $max1:expr, $max2:expr, $min0:expr, $min1:expr, $min2:expr) => {
+        #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+        pub struct $type_name(pub $inner_type);
 
-        impl ValueLimits for $type {
+        impl Clamp for $type_name {
             #[inline]
-            fn clamp(&self, channel: u8) -> $type {
+            fn clamp(&self, channel: u8) -> $type_name {
                 match channel {
-                    0 => $type(self.0.min($max0).max($min0)),
-                    1 => $type(self.0.min($max1).max($min1)),
-                    2 => $type(self.0.min($max2).max($min2)),
+                    0 => $type_name(self.0.min($max0).max($min0)),
+                    1 => $type_name(self.0.min($max1).max($min1)),
+                    2 => $type_name(self.0.min($max2).max($min2)),
                     _ => unreachable!(),
                 }
             }
         }
 
-        impl PartialOrd for $type {
-            fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-                self.0.partial_cmp(&other.0)
-            }
-        }
-
-        impl Num for $type {
-            type FromStrRadixErr = <$base as Num>::FromStrRadixErr;
-            fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
-                <$base as Num>::from_str_radix(str, radix).map($type)
-            }
-        }
-
-        impl Zero for $type {
-            fn zero() -> Self {
-                $type($base::zero())
-            }
-            fn is_zero(&self) -> bool {
-                self.0 == $base::zero()
-            }
-        }
-
-        impl One for $type {
-            fn one() -> Self {
-                $type($base::one())
-            }
-        }
-
-        impl Add for $type {
+        impl Add for $type_name {
             type Output = Self;
-            fn add(self, rhs: Self) -> Self {
-                $type(self.0 + rhs.0)
+            fn add(self, other: Self) -> Self {
+                $type_name(self.0 + other.0)
             }
         }
 
-        impl Sub for $type {
+        impl Sub for $type_name {
             type Output = Self;
-            fn sub(self, rhs: Self) -> Self {
-                $type(self.0 - rhs.0)
+            fn sub(self, other: Self) -> Self {
+                $type_name(self.0 - other.0)
             }
         }
 
-        impl Mul for $type {
+        impl Mul for $type_name {
             type Output = Self;
-            fn mul(self, rhs: Self) -> Self {
-                $type(self.0 * rhs.0)
+            fn mul(self, other: Self) -> Self {
+                $type_name(self.0 * other.0)
             }
         }
 
-        impl Div for $type {
+        impl Div for $type_name {
             type Output = Self;
-            fn div(self, rhs: Self) -> Self {
-                $type(self.0 / rhs.0)
+            fn div(self, other: Self) -> Self {
+                $type_name(self.0 / other.0)
             }
         }
 
-        impl Rem for $type {
+        impl Rem for $type_name {
             type Output = Self;
-            fn rem(self, rhs: Self) -> Self {
-                $type(self.0 % rhs.0)
+            fn rem(self, other: Self) -> Self {
+                $type_name(self.0 % other.0)
             }
         }
 
-        impl NumCast for $type {
-            fn from<T: ToPrimitive>(n: T) -> Option<Self> {
-                <$base as NumCast>::from(n).map($type)
+        impl Mul<$inner_type> for $type_name {
+            type Output = Self;
+            fn mul(self, scalar: $inner_type) -> Self {
+                $type_name(self.0 * scalar)
             }
         }
 
-        impl ToPrimitive for $type {
-            fn to_i64(&self) -> Option<i64> {
-                self.0.to_i64()
-            }
-            fn to_u64(&self) -> Option<u64> {
-                self.0.to_u64()
-            }
-            fn to_f64(&self) -> Option<f64> {
-                self.0.to_f64()
+        impl Div<$inner_type> for $type_name {
+            type Output = Self;
+            fn div(self, scalar: $inner_type) -> Self {
+                $type_name(self.0 / scalar)
             }
         }
 
-        impl AsRef<$base> for $type {
-            fn as_ref(&self) -> &$base {
-                &self.0
+        impl AddAssign for $type_name {
+            fn add_assign(&mut self, other: Self) {
+                self.0 += other.0;
             }
         }
 
-        impl From<$base> for $type {
-            fn from(v: $base) -> Self {
-                $type(v)
+        impl SubAssign for $type_name {
+            fn sub_assign(&mut self, other: Self) {
+                self.0 -= other.0;
             }
         }
 
-        impl From<$type> for $base {
-            fn from(v: $type) -> Self {
-                v.0
+        impl MulAssign for $type_name {
+            fn mul_assign(&mut self, other: Self) {
+                self.0 *= other.0;
+            }
+        }
+
+        impl DivAssign for $type_name {
+            fn div_assign(&mut self, other: Self) {
+                self.0 /= other.0;
+            }
+        }
+
+        impl RemAssign for $type_name {
+            fn rem_assign(&mut self, other: Self) {
+                self.0 %= other.0;
+            }
+        }
+
+        impl MulAssign<$inner_type> for $type_name {
+            fn mul_assign(&mut self, scalar: $inner_type) {
+                self.0 *= scalar;
+            }
+        }
+
+        impl DivAssign<$inner_type> for $type_name {
+            fn div_assign(&mut self, scalar: $inner_type) {
+                self.0 /= scalar;
+            }
+        }
+
+        impl From<u8> for $type_name {
+            fn from(x: u8) -> Self {
+                $type_name(<$inner_type>::from(x))
+            }
+        }
+
+        impl From<$type_name> for f32 {
+            fn from(val: $type_name) -> f32 {
+                val.0 as f32
+            }
+        }
+
+        impl From<f32> for $type_name {
+            fn from(x: f32) -> Self {
+                $type_name(x as $inner_type)
+            }
+        }
+
+        impl Display for $type_name {
+            fn fmt(&self, f: &mut Formatter) -> Result {
+                write!(f, "{}", self.0)
             }
         }
     };
 }
 
-impl_color_type!(Rgba, u8, 255u8, 255u8, 255u8, 0u8, 0u8, 0u8);
-impl_color_type!(Hsla, f32, 180.0f32, 1.0f32, 1.0f32, -180.0f32, 0.0f32, 0.0f32);
-impl_color_type!(Luva, f32, 100.0f32, 176.0f32, 108.0f32, 0.0f32, -84.0f32, -135.0f32);
+impl_newtype!(Rgba, u8, 255u8, 255u8, 255u8, 0u8, 0u8, 0u8);
+impl_newtype!(Hsla, f32, 180.0f32, 1.0f32, 1.0f32, -180.0f32, 0.0f32, 0.0f32);
+impl_newtype!(Luva, f32, 100.0f32, 176.0f32, 108.0f32, 0.0f32, -84.0f32, -135.0f32);
