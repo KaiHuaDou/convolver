@@ -335,7 +335,7 @@ where
 
     pub fn generate_spatial_kernel(size: usize, spatial_sigma: f32) -> Vec<f32> {
         let center_idx = size / 2;
-        let mut result: Vec<f32> = Vec::with_capacity(size * size);
+        let mut result: Vec<f32> = vec![0f32; size * size];
         for y in 0..size {
             for x in 0..size {
                 let dx = (x as i32 - center_idx as i32).abs() as f32;

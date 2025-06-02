@@ -1,6 +1,11 @@
 #![allow(dead_code)]
 #![feature(trait_alias)]
 
+use mimalloc::MiMalloc;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
+
 mod add;
 mod colormode;
 mod convolve;

@@ -63,8 +63,10 @@ convolver <MODE[rgba/hsla/luva]> \
 ### 图像合并
 
 ```sh
-convolver add <图片1> <图片2> <输出图片>
+convolver add <图片1> <图片2> <输出图片> -m
 ```
+
+- `-m` 是否取通道平均
 
 ## 许可证
 

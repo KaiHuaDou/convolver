@@ -1,4 +1,5 @@
 use crate::colormode::*;
+use fast_math::*;
 
 pub enum Pos {
     Max,
@@ -78,34 +79,41 @@ where
         let center = self.size / 2;
         let area = self.size * self.size;
         let center_pixel = self.data[center * self.size + center];
-        let mut result = [T::from(0u8); 4];
+        let mut result = [0.0f32; 4];
         let mut total_weight = 0.0;
+        let sigma_factor = 2.0 * kernel_sigma[area] * kernel_sigma[area];
+        let color_factor = -1.0 / (2.0 * sigma_factor);
 
-        for y in 0..self.size {
-            for x in 0..self.size {
+        for x in 0..self.size {
+            for y in 0..self.size {
                 let idx = y * self.size + x;
                 let pixel = self.data[idx];
+                let space_weight = kernel_sigma[idx];
 
-                let mut range_weight = 0.0;
-                for c in 0..4 {
-                    let diff = (pixel[c] - center_pixel[c]).into();
-                    range_weight +=
-                        (-diff * diff / (2.0 * kernel_sigma[area] * kernel_sigma[area])).exp();
-                }
-                range_weight /= 4.0;
+                let diff0 = (pixel[0] - center_pixel[0]).into();
+                let diff1 = (pixel[1] - center_pixel[1]).into();
+                let diff2 = (pixel[2] - center_pixel[2]).into();
+                let diff3 = (pixel[3] - center_pixel[3]).into();
+                let range_weight = (exp_raw(diff0 * diff0 * color_factor)
+                    + exp_raw(diff1 * diff1 * color_factor)
+                    + exp_raw(diff2 * diff2 * color_factor)
+                    + exp_raw(diff3 * diff3 * color_factor))
+                    / 4.0;
 
-                let weight = kernel_sigma[x * self.size + y] * range_weight;
-
-                for c in 0..4 {
-                    result[c] += pixel[c] * T::from(weight);
-                }
+                let weight = space_weight * range_weight;
                 total_weight += weight;
+
+                result[0] = result[0] + pixel[0].into() * weight;
+                result[1] = result[1] + pixel[1].into() * weight;
+                result[2] = result[2] + pixel[2].into() * weight;
+                result[3] = result[3] + pixel[3].into() * weight;
             }
         }
 
-        for c in 0..4 {
-            result[c] /= T::from(total_weight);
-        }
-        result
+        result[0] = result[0] / total_weight;
+        result[1] = result[1] / total_weight;
+        result[2] = result[2] / total_weight;
+        result[3] = result[3] / total_weight;
+        [T::from(result[0]), T::from(result[1]), T::from(result[2]), T::from(result[3])]
     }
 }
